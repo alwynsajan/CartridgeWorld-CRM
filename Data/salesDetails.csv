@@ -1,0 +1,41 @@
+Date,Customer Name,Customer Address,Customer Phone,Product Name,Product Type,Colour,Price ($),Quantity
+24-11-2024,Alwyn Sajan,396 Stirling Highway,0428609693,ANZ612Y,Catridge,Yellow,27,1
+24-11-2024,Alwyn Sajan,396 Stirling Highway,0428609693,ANZ612C,Toner,Cyan,25.12,2
+24-11-2024,Alwyn Sajan,396 Stirling Highway,0428609693,ANZ612B,Catridge,Black,12.12,10
+24-11-2024,Aksa,asdfg,234567,ANZ612B,Catridge,Black,12.12,1
+24-11-2024,Aksa,asdfg,234567,ANZ612C,Toner,Cyan,25.12,1
+24-11-2024,Aksa,asdfg,234567,Paper,Miscellaneous,N/A,1,10
+24-11-2024,Aksa,asdfg,234567,ANZ612C,Toner,Cyan,25.12,1
+24-11-2024,Aksa,asdfg,234567,sdw,Miscellaneous,N/A,1,112
+24-11-2024,Aksa,asdfg,234567,ANZ612M,Catridge,Magentha,45,1
+24-11-2024,Aksa,asdfg,234567,paper,Miscellaneous,N/A,34,12
+24-11-2024,Aksa,asdfg,234567,ANZ612B,Catridge,Black,12.12,1
+24-11-2024,Aksa,asdfg,234567,ANZ612M,Catridge,Magentha,45,1
+24-01-2025,Alwyn Sajan,396 Stirling Highway,0428609693,hp 67,67,nan,57,1
+24-01-2025,Alwyn Sajan,396 Stirling Highway,0428609693,ANZ612B,Catridge,Black,12.12,1
+24-01-2025,Alwyn Sajan,396 Stirling Highway,0428609693,hp 67,67,nan,57,1
+24-01-2025,Alwyn Sajan,396 Stirling Highway,0428609693,ANZ612B,Catridge,Black,12.12,1
+24-01-2025,Aksa,asdfg,234567,2we,Miscellaneous,N/A,12,2
+24-01-2025,Aksa,asdfg,234567,hp 67,67,nan,57,2
+24-01-2025,Aksa,asdfg,234567,2we,Miscellaneous,N/A,12,2
+24-01-2025,Aksa,asdfg,234567,hp 67,67,nan,57,2
+27-01-2025,akk,,,1,nan,29,,
+27-01-2025,akk,,,1,67,57,,
+28-01-2025,Alwyn Sajan,396 Stirling Highway,0428609693,N/A,Paper,Miscellaneous,0.2,12
+2025-01-28,Alwyn Sajan,396 Stirling Highway,0428609693,Paper,Miscellaneous,N/A,0.2,12
+2025-01-29,Alwyn Sajan,396 Stirling Highway,0428609693,ANZ612Y,Catridge,Yellow,27.0,1
+2025-01-29,Alwyn Sajan,396 Stirling Highway,0428609693,HP12,nan,nan,345.0,1
+2025-01-29,Alwyn Sajan,396 Stirling Highway,0428609693,Paper,Miscellaneous,N/A,0.05,100
+2025-01-29,N/A,N/A,N/A,hp 67,67,nan,34.0,62025-01-29,Alwyn Sajan,396 Stirling Highway,0428609693,ANZ612B,Catridge,Black,10.0,6
+2025-01-29,Alwyn Sajan,396 Stirling Highway,0428609693,HP123,Toner,Red,23.0,1
+2025-01-29,Alwyn Sajan,396 Stirling Highway,0428609693,HP123,Toner,Red,23.0,1
+2025-01-29,alakh,QE'FOLJ,EQ'FOSICL,HP123,Toner,Red,23.0,1
+2025-01-29,alakh,QE'FOLJ,EQ'FOSICL,hp67,nan,nan,45.0,9
+2025-01-29,Alwyn Sajan,396 Stirling Highway,0428609693,ANZ612Y,Catridge,Yellow,27.0,1
+2025-01-29,Alwyn Sajan,396 Stirling Highway,0428609693,ANZ612Y,Catridge,Yellow,27.0,1
+2025-01-31,asd,,,ANZ612Y,Catridge,Yellow,27.0,1
+2025-01-31,N/A,N/A,N/A,hp 67,67,nan,57.0,1
+2025-02-01,N/A,N/A,N/A,Hp23,,,56.0,1
+2025-02-01,N/A,N/A,N/A,Hp23,,,10.0,1
+2025-02-01,N/A,N/A,N/A,Hp23,,,100.0,1
+2025-02-01,N/A,N/A,N/A,Brother23,toner,red,1.0,1
