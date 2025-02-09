@@ -130,7 +130,7 @@ def openAddCustomerWindow(customerEntry,db):
     row_index += 1
 
     # Save button to save the customer info
-    saveButton = ctk.CTkButton(addCustomerWindow, text="Save and Exit", font=("Times New Roman", 21),command=lambda: saveCustomer(customerTypeVar, nameEntry, addressEntry, stateEntry, postcodeEntry, phoneEntry, emailEntry, abnEntry,customerEntry,db),width=int(screen_width * 0.15))
+    saveButton = ctk.CTkButton(addCustomerWindow, text="Save and Exit", font=("Times New Roman", 21),fg_color= "#393939",hover_color="#252523",command=lambda: saveCustomer(customerTypeVar, nameEntry, addressEntry, stateEntry, postcodeEntry, phoneEntry, emailEntry, abnEntry,customerEntry,db),width=int(screen_width * 0.15))
     saveButton.grid(row=row_index, columnspan=2, pady=20)
 
     def clearAllEntries():
@@ -144,7 +144,7 @@ def openAddCustomerWindow(customerEntry,db):
         abnEntry.delete(0, tk.END)
 
     # Clear All button
-    clearButton = ctk.CTkButton(addCustomerWindow, text="Clear All", font=("Times New Roman", 21), fg_color="red",command=clearAllEntries, width=int(screen_width * 0.15))
+    clearButton = ctk.CTkButton(addCustomerWindow, text="Clear All", font=("Times New Roman", 21), fg_color= "#e62739",hover_color="#a93226",command=clearAllEntries, width=int(screen_width * 0.15))
     clearButton.grid(row=row_index+1, columnspan=2, pady=20)
 
 def saveCustomer(customerTypeVar, nameEntry, addressEntry, stateEntry, postcodeEntry, phoneEntry, emailEntry, abnEntry,customerEntry,db):
@@ -274,10 +274,10 @@ def showCustomerDetails(selectedCustomer, customerEntry):
     buttonFrame.pack(pady=10, padx=10)  # Centered
 
     # Add buttons to the same row in the frame
-    selectButton = ctk.CTkButton(buttonFrame, text="Select Customer", width=int(screen_width * .15), font=("Times New Roman", 21), command=selectCust)
+    selectButton = ctk.CTkButton(buttonFrame, text="Select Customer",fg_color= "#393939",hover_color="#252523", width=int(screen_width * .15), font=("Times New Roman", 21), command=selectCust)
     selectButton.grid(row=0, column=0, padx=5, pady=5)
 
-    closeButton = ctk.CTkButton(buttonFrame, text="Close", width=int(screen_width * .15), font=("Times New Roman", 21), command=detailsWindow.destroy)
+    closeButton = ctk.CTkButton(buttonFrame, text="Close",fg_color= "#e62739",hover_color="#a93226", width=int(screen_width * .15), font=("Times New Roman", 21), command=detailsWindow.destroy)
     closeButton.grid(row=0, column=1, padx=5, pady=5)
 
     # Adjust the layout to center the frames
@@ -365,32 +365,56 @@ def openSales(selectedName, db):
     Address: {first_sale['customerAddress']}
     Phone: {first_sale['customerPhone']}
     """
-    customerDetailsLabel = ctk.CTkLabel(customerDetailsFrame, text=customerDetails, font=("Times New Roman", 20), anchor="center")
+    customerDetailsLabel = ctk.CTkLabel(customerDetailsFrame, text=customerDetails,width=window_width * 0.9, font=("Times New Roman", 20), anchor="center")
     customerDetailsLabel.pack(padx=10, pady=5)
 
-    # Loop through each product and display its details in separate frames
+    # Group sales by date
+    grouped_sales = {}
     for sale in customer_sales:
-        productFrame = ctk.CTkFrame(contentFrame, width=window_width * 0.9)  # Use 90% of the window width
-        productFrame.pack(pady=20)  # Add padding for spacing between product frames
+        date = sale["date"]
+        if date not in grouped_sales:
+            grouped_sales[date] = []
+        grouped_sales[date].append(sale)
 
-        # Center the product frame in the window
-        productFrame.pack_propagate(False)  # Prevent resizing based on content
-        print("sale : ",sale)
-        productDetails = f"""
-        Date: {sale['date']}
-        Product Name: {sale['productName']}
-        Product Type: {sale['productType']}
-        Colour: {sale['colour']}
-        Price: ${sale['price']}
-        Quantity: {sale['quantity']}
-        Payment Type: {sale['paymentType']}
-        """
-        productLabel = ctk.CTkLabel(productFrame, text=productDetails, font=("Times New Roman", 18), anchor="center")
-        productLabel.pack(padx=10, pady=5)
+    # Loop through grouped sales and display products under the same date
+    for date, sales in grouped_sales.items():
+        # Calculate total price for that date
+        total_price = sum(float(sale["price"]) * int(sale["quantity"]) for sale in sales)
+
+        # Create a frame for the date
+        dateFrame = ctk.CTkFrame(contentFrame, width=window_width * 0.9)
+        dateFrame.pack(pady=20)
+
+        # Date label (Bold)
+        dateLabel = ctk.CTkLabel(dateFrame, text=f"Date: {date}", font=("Times New Roman", 20, "bold"), anchor="center")
+        dateLabel.pack(pady=5)
+
+        # Loop through each sale and display product details under the same date
+        for sale in sales:
+            productDetails = f"""
+            Product Name: {sale['productName']}
+            Product Type: {sale['productType']}
+            Colour: {sale['colour']}
+            Price: ${sale['price']}
+            Quantity: {sale['quantity']}
+            Payment Type: {sale['paymentType']}
+            """
+            productLabel = ctk.CTkLabel(dateFrame, text=productDetails,width=window_width * 0.9, font=("Times New Roman", 18), anchor="center")
+            productLabel.pack(padx=10, pady=2)
+
+        # Display total price for all purchases on that date
+        totalPriceLabel = ctk.CTkLabel(
+            dateFrame, 
+            text=f"Total Price: ${total_price:.2f}", 
+            font=("Times New Roman", 18, "bold"),  # Bold total price
+            anchor="center", 
+            text_color="red"
+        )
+        totalPriceLabel.pack(pady=5)
 
     # Close Button
-    closeButton = ctk.CTkButton(salesWindow, text="Close", font=("Times New Roman", 18), command=salesWindow.destroy,fg_color="red")
-    closeButton.pack(pady=20) 
+    closeButton = ctk.CTkButton(salesWindow, text="Close", font=("Times New Roman", 18), command=salesWindow.destroy, fg_color="#e62739", hover_color="#a93226")
+    closeButton.pack(pady=20)
 
 
 def openCustomerSelection(customerEntry,flag,db):
@@ -466,7 +490,7 @@ def openCustomerSelection(customerEntry,flag,db):
         customerListbox.bind("<Double-1>", lambda e: openSales(customerListbox.get(customerListbox.curselection()),db))
 
     # Close button at the bottom center
-    closeButton = ctk.CTkButton(selectionWindow, text="Close", fg_color="red", text_color="white", font=("Times New Roman", 18),command=selectionWindow.destroy)
+    closeButton = ctk.CTkButton(selectionWindow, text="Close", fg_color= "#e62739",hover_color="#a93226", text_color="white", font=("Times New Roman", 18),command=selectionWindow.destroy)
     closeButton.pack(pady=10)
 
 def removeProduct(productEntry):
@@ -540,10 +564,10 @@ def removeProduct(productEntry):
     buttonFrame = ctk.CTkFrame(removeWindow)
     buttonFrame.pack(pady=10)
 
-    removeButton = ctk.CTkButton(buttonFrame,text="Remove",width=int(screen_width * 0.15),font=("Times New Roman", 21),command=removeSelectedProducts,fg_color="red")
+    removeButton = ctk.CTkButton(buttonFrame,text="Remove",fg_color= "#e62739",hover_color="#a93226", width=int(screen_width * 0.15),font=("Times New Roman", 21),command=removeSelectedProducts)
     removeButton.grid(row=0, column=0, padx=10)
 
-    closeButton = ctk.CTkButton(buttonFrame,text="Close",width=int(screen_width * 0.15),font=("Times New Roman", 21),command=removeWindow.destroy,)
+    closeButton = ctk.CTkButton(buttonFrame,text="Close",fg_color= "#393939",hover_color="#252523", width=int(screen_width * 0.15),font=("Times New Roman", 21),command=removeWindow.destroy,)
     closeButton.grid(row=0, column=1, padx=10)
 
 def addToProductEntry(productEntry, name, quantity, unit_price):
@@ -675,13 +699,13 @@ def openAddProductWindow(productEntry, db):
     buttonFrame = ctk.CTkFrame(addProductWindow)
     buttonFrame.pack(pady=10)
 
-    saveButton = ctk.CTkButton(buttonFrame, text="Save", command=lambda: saveProductDetails(productEntry), width=int(screen_width * 0.15), font=("Times New Roman", 21))
+    saveButton = ctk.CTkButton(buttonFrame, text="Save", fg_color= "#393939",hover_color="#252523", command=lambda: saveProductDetails(productEntry), width=int(screen_width * 0.15), font=("Times New Roman", 21))
     saveButton.grid(row=0, column=0, padx=10, pady=5)
 
-    exitButton = ctk.CTkButton(buttonFrame, text="Exit", command=closeWindow, width=int(screen_width * 0.15), font=("Times New Roman", 21))
+    exitButton = ctk.CTkButton(buttonFrame, text="Exit", fg_color= "#393939",hover_color="#252523", command=closeWindow, width=int(screen_width * 0.15), font=("Times New Roman", 21))
     exitButton.grid(row=0, column=1, padx=10, pady=5)
 
-    clearButton = ctk.CTkButton(buttonFrame, text="Clear All", fg_color="red", text_color="white", command=clearAllFields, width=int(screen_width * 0.15), font=("Times New Roman", 21))
+    clearButton = ctk.CTkButton(buttonFrame, text="Clear All", fg_color= "#e62739",hover_color="#a93226", text_color="white", command=clearAllFields, width=int(screen_width * 0.15), font=("Times New Roman", 21))
     clearButton.grid(row=0, column=2, padx=10, pady=5)
 
 def showProductDetails(selectedProduct, productEntry):
@@ -786,10 +810,10 @@ def showProductDetails(selectedProduct, productEntry):
     buttonFrame.pack(pady=10, padx=10)
 
     # Add buttons to the frame
-    selectButton = ctk.CTkButton(buttonFrame, text="Select Product", width=int(screen_width * .15), font=("Times New Roman", 21), command=selectPDT)
+    selectButton = ctk.CTkButton(buttonFrame, text="Select Product",fg_color= "#393939",hover_color="#252523", width=int(screen_width * .15), font=("Times New Roman", 21), command=selectPDT)
     selectButton.grid(row=0, column=0, padx=5, pady=5)
 
-    closeButton = ctk.CTkButton(buttonFrame, text="Close", width=int(screen_width * .15), font=("Times New Roman", 21), command=detailsWindow.destroy)
+    closeButton = ctk.CTkButton(buttonFrame, text="Close",fg_color= "#e62739",hover_color="#a93226", width=int(screen_width * .15), font=("Times New Roman", 21), command=detailsWindow.destroy)
     closeButton.grid(row=0, column=1, padx=5, pady=5)
 
     # Adjust the layout to center the frames
@@ -897,7 +921,7 @@ def openSelectProductWindow(productEntry,db):
 
 
     # Close button at the bottom center
-    closeButton = ctk.CTkButton(selectionWindow, text="Close", fg_color="red", text_color="white", font=("Times New Roman", 18),command=selectionWindow.destroy)
+    closeButton = ctk.CTkButton(selectionWindow, text="Close", fg_color= "#e62739",hover_color="#a93226", text_color="white", font=("Times New Roman", 18),command=selectionWindow.destroy)
     closeButton.pack(pady=10)
 
 def addNewProductToSystem(productName, productPrice, db):
@@ -1016,16 +1040,16 @@ def openMiscellaneousWindow(productEntry,db):
 
     addButton = ctk.CTkButton(buttonFrame, text="Add Product to Checkout", width=int(screen_width * 0.15),
                               font=("Times New Roman", 21), command=lambda: addMiscProduct(productEntry),
-                              fg_color="#5cbdb9", hover_color="#1e8449")
+                              fg_color= "#393939",hover_color="#252523")
     addButton.grid(row=0, column=0, padx=10)
 
     closeButton = ctk.CTkButton(buttonFrame, text="Close", width=int(screen_width * 0.15),
                                 font=("Times New Roman", 21), command=miscWindow.destroy,
-                                fg_color="#9a4d55", hover_color="#a93226")
+                                fg_color= "#e62739",hover_color="#a93226",)
     closeButton.grid(row=0, column=1, padx=10)
 
     addToSysButton = ctk.CTkButton(buttonFrame, text="Add Product to System", width=int(screen_width * 0.10),
-                              font=("Times New Roman", 21), command=lambda: addNewProductToSystem(nameEntry.get().strip(),priceEntry.get().strip(),db))
+                              font=("Times New Roman", 21), fg_color= "#393939",hover_color="#252523", command=lambda: addNewProductToSystem(nameEntry.get().strip(),priceEntry.get().strip(),db))
     addToSysButton.grid(row=0, column=2, padx=10)
 
 
@@ -1211,8 +1235,8 @@ def openPerDaySalesWindow(db):
     
     searchEntry.bind("<KeyRelease>", lambda event: onSearchChange())
 
-    closeButton = ctk.CTkButton(salesWindow, text="Close", width=int(screen_width * 0.15), fg_color="red", 
-                                hover_color="#252523", font=("Times New Roman", 21, "bold"), 
+    closeButton = ctk.CTkButton(salesWindow, text="Close", width=int(screen_width * 0.15), fg_color= "#e62739",hover_color="#a93226", 
+                                 font=("Times New Roman", 21, "bold"), 
                                 command=salesWindow.destroy)
     closeButton.pack(pady=20)
 
@@ -1320,8 +1344,8 @@ def creditWindow(db):
     searchEntry.bind("<KeyRelease>", lambda event: updateList())
     updateList()
 
-    closeButton = ctk.CTkButton(creditWin, text="Close", width=int(screen_width * 0.15), fg_color="red", 
-                                hover_color="#252523", font=("Times New Roman", 21, "bold"), 
+    closeButton = ctk.CTkButton(creditWin, text="Close", width=int(screen_width * 0.15), fg_color= "#e62739",hover_color="#a93226", 
+                                 font=("Times New Roman", 21, "bold"), 
                                 command=creditWin.destroy)
     closeButton.pack(pady=20)
     canvas.update_idletasks()
@@ -1390,19 +1414,12 @@ def main():
     mainContentFrame = ctk.CTkFrame(root, width=int(screen_width * 0.75 ),fg_color="#dfd8c8")
     mainContentFrame.grid(row=0, column=1, sticky="nsew")
 
-    # Add a frame to hold the image
-    imageFrame = ctk.CTkFrame(mainContentFrame, fg_color="#dfd8c8")
-    imageFrame.pack(pady=20, fill="both", expand=True)
+    # Add a frame to hold the text
+    textFrame = ctk.CTkFrame(mainContentFrame, fg_color="#dfd8c8")
+    textFrame.pack(pady=20, fill="both", expand=True)
 
-    # Load the image using Pillow
-    image = Image.open("CW.png")
-
-    # Convert the Pillow image to CTkImage
-    ctk_image = CTkImage(image, size=(window_width*0.2, window_height*0.1))
-
-    # Use CTkImage in the CTkLabel
-    imageLabel = ctk.CTkLabel(imageFrame, image=ctk_image, text="")
-    imageLabel.pack(pady=20, padx=20, anchor="center")
+    textLabel = ctk.CTkLabel(textFrame, text="K.P.K ASSOCIATES", font=("Times New Roman", int(window_height * 0.05), "bold"))
+    textLabel.pack(pady=20, padx=20, anchor="center")
 
     # Customer section in a black-bordered box (10% increased sizes)
     customerFrame = ctk.CTkFrame(mainContentFrame, fg_color="#dfd8c8")
@@ -1466,7 +1483,7 @@ def main():
 
     # Set the column widths proportionally
     productEntry.column("Sl.No", width=int(screen_width * 0.05), anchor="center")
-    productEntry.column("Name", width=int(screen_width * 0.60), anchor="w")
+    productEntry.column("Name", width=int(screen_width * 0.58), anchor="w")
     productEntry.column("Quantity", width=int(screen_width * 0.1), anchor="center")
     productEntry.column("Unit Price", width=int(screen_width  * 0.1), anchor="center")
     productEntry.column("Total Price", width=int(screen_width * 0.15), anchor="center")
@@ -1524,7 +1541,7 @@ def main():
     printInvoiceButton = ctk.CTkButton(actionFrame, text=" Print Invoice ", width=int(screen_width * .15),fg_color= "#393939",hover_color="#252523",  font=("Times New Roman", int(21)))
     printInvoiceButton.grid(row=0, column=1, padx=int(10 * 1.5), pady=int(5 * 1.5))
 
-    clearAllButton = ctk.CTkButton(actionFrame, text=" Clear All ", width=int(screen_width * .15),fg_color= "red",hover_color="#252523",  font=("Times New Roman", int(21)), command = clear_data)
+    clearAllButton = ctk.CTkButton(actionFrame, text=" Clear All ", width=int(screen_width * .15),fg_color= "#e62739",hover_color="#a93226",  font=("Times New Roman", int(21)), command = clear_data)
     clearAllButton.grid(row=0, column=2, padx=int(10 * 1.5), pady=int(5 * 1.5))
 
 
