@@ -365,7 +365,7 @@ def openSales(selectedName, db):
     Address: {first_sale['customerAddress']}
     Phone: {first_sale['customerPhone']}
     """
-    customerDetailsLabel = ctk.CTkLabel(customerDetailsFrame, text=customerDetails, font=("Times New Roman", 20), anchor="center")
+    customerDetailsLabel = ctk.CTkLabel(customerDetailsFrame, text=customerDetails,width=window_width * 0.9, font=("Times New Roman", 20), anchor="center")
     customerDetailsLabel.pack(padx=10, pady=5)
 
     # Group sales by date
@@ -399,7 +399,7 @@ def openSales(selectedName, db):
             Quantity: {sale['quantity']}
             Payment Type: {sale['paymentType']}
             """
-            productLabel = ctk.CTkLabel(dateFrame, text=productDetails, font=("Times New Roman", 18), anchor="center")
+            productLabel = ctk.CTkLabel(dateFrame, text=productDetails,width=window_width * 0.9, font=("Times New Roman", 18), anchor="center")
             productLabel.pack(padx=10, pady=2)
 
         # Display total price for all purchases on that date
