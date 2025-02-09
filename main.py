@@ -1390,19 +1390,12 @@ def main():
     mainContentFrame = ctk.CTkFrame(root, width=int(screen_width * 0.75 ),fg_color="#dfd8c8")
     mainContentFrame.grid(row=0, column=1, sticky="nsew")
 
-    # Add a frame to hold the image
-    imageFrame = ctk.CTkFrame(mainContentFrame, fg_color="#dfd8c8")
-    imageFrame.pack(pady=20, fill="both", expand=True)
+    # Add a frame to hold the text
+    textFrame = ctk.CTkFrame(mainContentFrame, fg_color="#dfd8c8")
+    textFrame.pack(pady=20, fill="both", expand=True)
 
-    # Load the image using Pillow
-    image = Image.open("CW.png")
-
-    # Convert the Pillow image to CTkImage
-    ctk_image = CTkImage(image, size=(window_width*0.2, window_height*0.1))
-
-    # Use CTkImage in the CTkLabel
-    imageLabel = ctk.CTkLabel(imageFrame, image=ctk_image, text="")
-    imageLabel.pack(pady=20, padx=20, anchor="center")
+    textLabel = ctk.CTkLabel(textFrame, text="K.P.K ASSOCIATES", font=("Times New Roman", int(window_height * 0.05), "bold"))
+    textLabel.pack(pady=20, padx=20, anchor="center")
 
     # Customer section in a black-bordered box (10% increased sizes)
     customerFrame = ctk.CTkFrame(mainContentFrame, fg_color="#dfd8c8")
@@ -1466,7 +1459,7 @@ def main():
 
     # Set the column widths proportionally
     productEntry.column("Sl.No", width=int(screen_width * 0.05), anchor="center")
-    productEntry.column("Name", width=int(screen_width * 0.60), anchor="w")
+    productEntry.column("Name", width=int(screen_width * 0.58), anchor="w")
     productEntry.column("Quantity", width=int(screen_width * 0.1), anchor="center")
     productEntry.column("Unit Price", width=int(screen_width  * 0.1), anchor="center")
     productEntry.column("Total Price", width=int(screen_width * 0.15), anchor="center")
