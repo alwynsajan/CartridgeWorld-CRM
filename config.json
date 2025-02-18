@@ -5,5 +5,9 @@
         "user": "root",
         "password": "1234",
         "database": "CWdb"
-    }
+    },
+    "storeName" : "Cottesloe",
+    "storePhone" : "0423022648",
+    "storeABN" :  "35655816461",
+    "adobePath": "C:\\Program Files\\Adobe\\Acrobat DC\\Acrobat\\Acrobat.exe"
 }
