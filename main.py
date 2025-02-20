@@ -8,7 +8,10 @@ import os
 import tkinter.messagebox as messageBox  # For displaying error message
 import pandas as pd
 from datetime import datetime
-
+import subprocess
+from reportlab.pdfgen import canvas
+import json
+import generatePDF
 from dbClient import DbServer
 
 # Set appearance mode to light
@@ -1111,7 +1114,25 @@ def writePerDaySales(db):
     # Log response message
     print(response["message"])
 
-def generateInvoice(db):
+
+def printPDF(filename="output.pdf"):
+    """Print the PDF using Adobe Reader or Edge."""
+    try:
+        # Load the configuration file
+        with open("config.json", "r") as config_file:
+            config = json.load(config_file)
+
+        # Get the Adobe Acrobat path from the config
+        acrobat_path = config.get("adobePath", r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe")
+
+        # Run the print command
+        subprocess.run([acrobat_path, "/t", filename], check=True)
+        print(f"Printing: {filename}")
+        messageBox.showinfo("Success", "PDF sent to printer.")
+    except Exception as e:
+        messageBox.showerror("Error", f"Failed to print: {e}")
+
+def printInvoice(db):
     global screen_width, screen_height, finalProductList, selectedCustomerDetails
 
     if finalProductList == []:
@@ -1150,6 +1171,7 @@ def generateInvoice(db):
 
     # Button to confirm payment type selection
     def onConfirm():
+        global finalProductList,selectedCustomerDetails
         selected_payment = payment_type.get()
         if not selected_payment:
             messageBox.showwarning("Input Error", "Please select a payment type.")
@@ -1158,6 +1180,8 @@ def generateInvoice(db):
         # Proceed with sales processing
         writePerDaySales(db)
         writeSalesDetails(db,selected_payment)
+        generatePDF.generateInvoice(selectedCustomerDetails,finalProductList)
+        printPDF()
         
         # Close the payment window
         paymentWindow.destroy()
@@ -1353,7 +1377,6 @@ def creditWindow(db):
 
 
 
-
 def main():
 
     global screen_width,screen_height,finalProductList
@@ -1535,11 +1558,11 @@ def main():
     actionFrame.pack(pady=int(20 * 1.5))
 
     # Increased button size (10% increase)
-    generateInvoiceButton = ctk.CTkButton(actionFrame, text="Generate Invoice", width=int(screen_width * .15),fg_color= "#393939",hover_color="#252523",  font=("Times New Roman", int(21)),command = lambda:generateInvoice(db))
-    generateInvoiceButton.grid(row=0, column=0, padx=int(10 * 1.5), pady=int(5 * 1.5))
+    printInvoiceButton = ctk.CTkButton(actionFrame, text="Print Invoice", width=int(screen_width * .15),fg_color= "#393939",hover_color="#252523",  font=("Times New Roman", int(21)),command = lambda:printInvoice(db))
+    printInvoiceButton.grid(row=0, column=0, padx=int(10 * 1.5), pady=int(5 * 1.5))
 
-    printInvoiceButton = ctk.CTkButton(actionFrame, text=" Print Invoice ", width=int(screen_width * .15),fg_color= "#393939",hover_color="#252523",  font=("Times New Roman", int(21)))
-    printInvoiceButton.grid(row=0, column=1, padx=int(10 * 1.5), pady=int(5 * 1.5))
+    # printInvoiceButton = ctk.CTkButton(actionFrame, text=" Print Invoice ", width=int(screen_width * .15),fg_color= "#393939",hover_color="#252523",  font=("Times New Roman", int(21)))
+    # printInvoiceButton.grid(row=0, column=1, padx=int(10 * 1.5), pady=int(5 * 1.5))
 
     clearAllButton = ctk.CTkButton(actionFrame, text=" Clear All ", width=int(screen_width * .15),fg_color= "#e62739",hover_color="#a93226",  font=("Times New Roman", int(21)), command = clear_data)
     clearAllButton.grid(row=0, column=2, padx=int(10 * 1.5), pady=int(5 * 1.5))
