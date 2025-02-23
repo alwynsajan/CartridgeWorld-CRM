@@ -9,22 +9,20 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 
-# Load configuration from JSON file
-with open("config.json", "r") as file:
-    config = json.load(file)
+CONFIG_FILE = "config.json"
 
-# Function to retrieve and increment invoice number
-INVOICE_FILE = "invoice_number.txt"
 def getInvoiceNumber():
-    if os.path.exists(INVOICE_FILE):
-        with open(INVOICE_FILE, "r") as f:
-            invoiceNo = int(f.read().strip())
-    else:
-        invoiceNo = 8390359  # Initial invoice number
+    # Load configuration
+    with open(CONFIG_FILE, "r") as file:
+        config = json.load(file)
     
+    invoiceNo = config.get("invoiceNumber", 1000)  # Default if not found
     newInvoiceNo = invoiceNo + 1
-    with open(INVOICE_FILE, "w") as f:
-        f.write(str(newInvoiceNo))
+    
+    # Update config with new invoice number
+    config["invoiceNumber"] = newInvoiceNo
+    with open(CONFIG_FILE, "w") as file:
+        json.dump(config, file, indent=4)
     
     return invoiceNo
 
@@ -77,6 +75,9 @@ def generateInvoice(customerData, productData):
         print(f"Error loading image: {e}")
 
     elements.append(Spacer(1, 0.3 * inch))
+
+    with open(CONFIG_FILE, "r") as file:
+        config = json.load(file)
 
     # Store and Invoice Details
     storeDetails = [

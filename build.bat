@@ -8,7 +8,7 @@ rmdir /s /q dist
 del main.spec
 
 :: Run PyInstaller with required options
-pyinstaller --onefile --icon=1.png ^
+pyinstaller --onefile --icon=icon.png ^
   --hidden-import=mariadb ^
   --hidden-import=sqlite3 ^
   --hidden-import=pymysql ^
