@@ -18,10 +18,10 @@ CREATE TABLE IF NOT EXISTS customerData (
 -- Step 3: Create productData Table
 CREATE TABLE IF NOT EXISTS productData (
     productID INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    productType VARCHAR(100),
-    colour VARCHAR(50),
-    price DECIMAL(10,2) 
+    brand VARCHAR(50),
+    name VARCHAR(50) NOT NULL,
+    productType VARCHAR(50),
+    price DECIMAL(10,2)
 );
 
 -- Step 4: Create PerdaySale Table
@@ -35,14 +35,7 @@ CREATE TABLE IF NOT EXISTS salesData (
     saleID INT AUTO_INCREMENT PRIMARY KEY,
     date DATE NOT NULL,
     customerID INT,
-    customerName VARCHAR(255) NOT NULL,
-    customerAddress TEXT ,
-    customerPhone VARCHAR(20),
-    productName VARCHAR(255) NOT NULL,
-    productType VARCHAR(100),
-    colour VARCHAR(50),
-    price DECIMAL(10,2) NOT NULL,
-    quantity INT NOT NULL,
+    productList VARCHAR(500),
     paymentType VARCHAR(50) NOT NULL,
     FOREIGN KEY (customerID) REFERENCES customerData(customerID) ON DELETE SET NULL
 );

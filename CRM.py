@@ -41,8 +41,6 @@ def openAddCustomerWindow(customerEntry,db):
     addCustomerWindow = ctk.CTkToplevel()  # New top-level window
     addCustomerWindow.title("Add New Customer")
 
-    print("In add cust ",selectedCustomerDetails)
-
     # Calculate window dimensions
     window_width = int(screen_width * 0.5)
     window_height = int(screen_height * 0.7)
@@ -169,8 +167,8 @@ def saveCustomer(customerTypeVar, nameEntry, addressEntry, stateEntry, postcodeE
     phone = phoneEntry.get()
     email = emailEntry.get()
     abn = abnEntry.get()
-
-    selectedCustomerDetails = {"Name":name, "Phone":phone,"Address":address}
+    customer_id =  db.getLatestCustomerID()
+    selectedCustomerDetails = {"Customer ID":customer_id,"Name":name, "Phone":phone,"Address":address}
     customerEntry.delete(0, "end")
     customerEntry.insert(0, f"Name: {selectedCustomerDetails['Name']}")
 
@@ -225,7 +223,7 @@ def updateCustomerListbox(searchEntry, listbox, customerList):
     listbox.delete(0, tk.END)
     for customer_id, name in customerList:
         if searchQuery in name.lower():
-            listbox.insert(tk.END, name)
+            listbox.insert(tk.END,f"{customer_id} : {name}")
 
 
 def showCustomerDetails(selectedCustomer, customerEntry):
@@ -289,18 +287,15 @@ def showCustomerDetails(selectedCustomer, customerEntry):
 
 
 def selectCustomer(event, customerEntry, listbox, db, customerList):
-    selectedName = listbox.get(listbox.curselection())
-    customer_id = next((cid for cid, name in customerList if name == selectedName), None)
-
-    if customer_id is None:
-        messageBox.showerror("Selection Error", "Failed to retrieve customer ID.")
-        return
+    selectedText = listbox.get(listbox.curselection())
+    customer_id, selectedName = selectedText.split(" : ", 1) 
 
     try:
         customerDetails = db.getCustomerDetails(customer_id, selectedName)
         if customerDetails:
             customerDict = {
-                'Customer Type': customerDetails[1],  # Adjust index based on DB schema
+                'Customer ID': customerDetails[0],
+                'Customer Type': customerDetails[1],
                 'Name': customerDetails[2],
                 'Address': customerDetails[3],
                 'State': customerDetails[4],
@@ -315,15 +310,28 @@ def selectCustomer(event, customerEntry, listbox, db, customerList):
     except Exception as e:
         messageBox.showerror("Database Error", f"Failed to fetch customer details: {e}")
 
-def openSales(selectedName, db):
+import ast  # To safely evaluate the string as a Python literal (list/dict)
+
+def openSales(selectedText, db):
     global screen_width, screen_height
 
-    # Fetch sales details for the selected customer from the database
-    customer_sales = db.getSalesByCustomerName(selectedName)
+    customer_id, selectedName = selectedText.split(" : ", 1)
 
+    # Fetch customer details
+    custData = db.getCustomerByID(customer_id)
+    if not custData:
+        messageBox.showinfo("No Data", "Customer not found.")
+        return
+
+    print("Customer Details: ", custData)
+
+    # Fetch sales details for the selected customer from the database
+    customer_sales = db.getSalesByCustomerName(customer_id)
     if not customer_sales:
         messageBox.showinfo("No Data", f"No sales details found for {selectedName}.")
         return
+    
+    print("customer_sales : ",customer_sales)
 
     # Create the sales details window
     salesWindow = ctk.CTkToplevel()
@@ -359,30 +367,41 @@ def openSales(selectedName, db):
 
     # Display customer details at the top
     customerDetailsFrame = ctk.CTkFrame(contentFrame)
-    customerDetailsFrame.pack(pady=20)  # Add padding to center the frame in the window
-
-    first_sale = customer_sales[0]  # Get the first record to extract customer details
+    customerDetailsFrame.pack(pady=20)
 
     customerDetails = f"""
-    Customer Name: {selectedName}
-    Address: {first_sale['customerAddress']}
-    Phone: {first_sale['customerPhone']}
+    Customer Name: {custData['name']}
+    Address: {custData['address']}
+    Phone: {custData['phone']}
+    Email: {custData['email']}
+    State: {custData['state']}
+    Postcode: {custData['postcode']}
+    ABN: {custData['ABN']}
     """
-    customerDetailsLabel = ctk.CTkLabel(customerDetailsFrame, text=customerDetails,width=window_width * 0.9, font=("Times New Roman", 20), anchor="center")
+    customerDetailsLabel = ctk.CTkLabel(customerDetailsFrame, text=customerDetails, width=window_width * 0.9, font=("Times New Roman", 20), anchor="center")
     customerDetailsLabel.pack(padx=10, pady=5)
 
     # Group sales by date
     grouped_sales = {}
     for sale in customer_sales:
         date = sale["date"]
+        # Parse the productList from string to list of dictionaries
+        product_list = ast.literal_eval(sale["productList"])
+
         if date not in grouped_sales:
             grouped_sales[date] = []
-        grouped_sales[date].append(sale)
+        grouped_sales[date].append(product_list)
+
+    print("grouped_sales : ",grouped_sales)
 
     # Loop through grouped sales and display products under the same date
     for date, sales in grouped_sales.items():
         # Calculate total price for that date
-        total_price = sum(float(sale["price"]) * int(sale["quantity"]) for sale in sales)
+        total_price = 0
+        for sale in sales:
+            print("Sale : ",sale)
+            for product in sale:
+                total_price += float(product["Price"]) * int(product["Quantity"])
 
         # Create a frame for the date
         dateFrame = ctk.CTkFrame(contentFrame, width=window_width * 0.9)
@@ -394,16 +413,16 @@ def openSales(selectedName, db):
 
         # Loop through each sale and display product details under the same date
         for sale in sales:
-            productDetails = f"""
-            Product Name: {sale['productName']}
-            Product Type: {sale['productType']}
-            Colour: {sale['colour']}
-            Price: ${sale['price']}
-            Quantity: {sale['quantity']}
-            Payment Type: {sale['paymentType']}
-            """
-            productLabel = ctk.CTkLabel(dateFrame, text=productDetails,width=window_width * 0.9, font=("Times New Roman", 18), anchor="center")
-            productLabel.pack(padx=10, pady=2)
+            for product in sale:
+                productDetails = f"""
+                Product Name: {product['Name'] if product['Name'] else 'N/A'}
+                Brand: {product['Brand']}
+                Product Type: {product['Product Type'] if product['Product Type'] else 'N/A'}
+                Price: ${product['Price']}
+                Quantity: {product['Quantity']}
+                """
+                productLabel = ctk.CTkLabel(dateFrame, text=productDetails, width=window_width * 0.9, font=("Times New Roman", 18), anchor="center")
+                productLabel.pack(padx=10, pady=2)
 
         # Display total price for all purchases on that date
         totalPriceLabel = ctk.CTkLabel(
@@ -419,7 +438,6 @@ def openSales(selectedName, db):
     closeButton = ctk.CTkButton(salesWindow, text="Close", font=("Times New Roman", 18), command=salesWindow.destroy, fg_color="#e62739", hover_color="#a93226")
     closeButton.pack(pady=20)
 
-
 def openCustomerSelection(customerEntry,flag,db):
     global selectionWindow, screen_width, screen_height
     if selectionWindow and selectionWindow.winfo_exists():
@@ -428,7 +446,7 @@ def openCustomerSelection(customerEntry,flag,db):
 
     # Fetch customer names and IDs from the database
     try:
-        customerList = db.getCustomerName()  # Fetches (id, name) tuples
+        customerList = db.getCustomerNameAndID()  # Fetches (id, name) tuples
     except Exception as e:
         messageBox.showerror("Database Error", f"Failed to fetch customers: {e}")
         return
@@ -573,7 +591,7 @@ def removeProduct(productEntry):
     closeButton = ctk.CTkButton(buttonFrame,text="Close",fg_color= "#393939",hover_color="#252523", width=int(screen_width * 0.15),font=("Times New Roman", 21),command=removeWindow.destroy,)
     closeButton.grid(row=0, column=1, padx=10)
 
-def addToProductEntry(productEntry, name, quantity, unit_price):
+def addToProductEntry(productEntry,brand, name, quantity, unit_price):
     global currentSLNo  # Use the global variable to track serial numbers
 
     try:
@@ -589,7 +607,7 @@ def addToProductEntry(productEntry, name, quantity, unit_price):
         productEntry.insert(
             "",  # Parent item (root level)
             "end",  # Position to insert
-            values=(currentSLNo, name, quantity, f"${unit_price:.2f}", f"${total_price:.2f}")
+            values=(currentSLNo,brand, name, quantity, f"${unit_price:.2f}", f"${total_price:.2f}")
         )
 
         # Increment the serial number
@@ -619,7 +637,7 @@ def openAddProductWindow(productEntry, db):
     formFrame.pack(pady=20, padx=20, fill="both", expand=True)
 
     # Labels and Entry Fields for Product Details
-    labels = ["Name", "Product Type", "Colour", "Price", "Quantity"]  # Quantity only used in CRM
+    labels = ["Brand","Name", "Product Type", "Price", "Quantity"] 
     entries = {}
 
     for row, label in enumerate(labels):
@@ -636,53 +654,58 @@ def openAddProductWindow(productEntry, db):
         
         try:
             productDetails = {
-                "name": entries["Name"].get(),
-                "productType": entries["Product Type"].get(),
-                "colour": entries["Colour"].get(),
-                "price": float(entries["Price"].get()),
+                "Brand": entries["Brand"].get(),
+                "Name": entries["Name"].get(),
+                "Product Type": entries["Product Type"].get(),
+                "Price": float(entries["Price"].get()),
             }
             quantity = int(entries["Quantity"].get())  # Quantity for CRM only
 
-            # Check if the product already exists in the database
-            existingProduct = db.getProductByName(productDetails["name"])
-            
-            if not existingProduct:
-                # Insert new product into the database
-                try:
-                    db.addProductData(productDetails)
-                    messageBox.showinfo("Success", "Product added to Database successfully!")
-                except Exception as e:
-                    messageBox.showwarning("Database Error", f"Failed to add product: {e}")
+            # Check if 'Brand' or 'Name' is empty
+            if not productDetails["Brand"] or not productDetails["Name"]:
+                messageBox.showwarning("Input Error", "Brand and Name cannot be empty!")
+            else:
 
-            # Check if the product already exists in the finalProductList
-            for product in finalProductList:
-                if product['Name'].lower() == productDetails['name'].lower():
-                    # Update the quantity and price for the existing product
-                    product['Quantity'] += quantity
-                    product['Price'] = productDetails["price"]  # Update unit price
+                # Check if the product already exists in the database
+                existingProduct = db.getProductByName(productDetails["Name"])
+                
+                if not existingProduct:
+                    # Insert new product into the database
+                    try:
+                        db.addProductData(productDetails)
+                        messageBox.showinfo("Success", "Product added to Database successfully!")
+                    except Exception as e:
+                        messageBox.showwarning("Database Error", f"Failed to add product: {e}")
 
-                    # Update the corresponding row in the TreeView
-                    for child in productEntry.get_children():
-                        values = productEntry.item(child, 'values')
-                        if values[1].lower() == productDetails['name'].lower():  # Match product name
-                            # Update quantity and total price in TreeView
-                            total_price = product['Quantity'] * product['Price']
-                            productEntry.item(child, values=(values[0], values[1], product['Quantity'], 
-                                                            f"${product['Price']:.2f}", f"${total_price:.2f}"))
-                            break
-                    
-                    # Close the details window
-                    print("finalProductList:", finalProductList)
-                    addProductWindow.destroy()
-                    return
+                # Check if the product already exists in the finalProductList
+                for product in finalProductList:
+                    if product['Name'].lower() == productDetails['Name'].lower():
+                        # Update the quantity and price for the existing product
+                        product['Quantity'] += quantity
+                        product['Price'] = productDetails["Price"]  # Update unit price
 
-            # Add the product to the finalProductList
-            productDetails['Quantity'] = quantity
-            finalProductList.append(productDetails)
-            print("finalProductList:", finalProductList)
+                        # Update the corresponding row in the TreeView
+                        for child in productEntry.get_children():
+                            values = productEntry.item(child, 'values')
+                            if values[1].lower() == productDetails['Name'].lower():  # Match product name
+                                # Update quantity and total price in TreeView
+                                total_price = product['Quantity'] * product['Price']
+                                productEntry.item(child, values=(values[0], values[1], product['Quantity'], 
+                                                                f"${product['Price']:.2f}", f"${total_price:.2f}"))
+                                break
+                        
+                        # Close the details window
+                        print("finalProductList:", finalProductList)
+                        addProductWindow.destroy()
+                        return
 
-            # Update the TreeView in CRM
-            addToProductEntry(productEntry, productDetails["name"], quantity, productDetails["price"])
+                # Add the product to the finalProductList
+                productDetails['Quantity'] = quantity
+                finalProductList.append(productDetails)
+                print("finalProductList:", finalProductList)
+
+                # Update the TreeView in CRM
+                addToProductEntry(productEntry,productDetails["Brand"], productDetails["Name"], quantity, productDetails["Price"])
 
         except ValueError:
             messageBox.showerror("Input Error", "Provide valid input for Name, Quantity, and Price!")
@@ -797,7 +820,7 @@ def showProductDetails(selectedProduct, productEntry):
             finalProductList.append(selectedProduct)
             print("finalProductList : ",finalProductList)
 
-            addToProductEntry(productEntry,selectedProduct['Name'],selectedProduct['Quantity'],selectedProduct['Price'])
+            addToProductEntry(productEntry,selectedProduct['Brand'],selectedProduct['Name'],selectedProduct['Quantity'],selectedProduct['Price'])
             detailsWindow.destroy()
 
             if selectedProduct['Quantity'] <= 0 or selectedProduct['Price'] <= 0:
@@ -839,9 +862,9 @@ def selectProduct(event, productEntry, listbox, db):
         return
     
     selectedProduct = {
-        "Name": product_details[0],
-        "Product Type": product_details[1],
-        "Colour": product_details[2],
+        "Brand":product_details[0],
+        "Name": product_details[1],
+        "Product Type": product_details[2],
         "Price": product_details[3] if product_details[3] is not None else 0
     }
 
@@ -866,6 +889,9 @@ def openSelectProductWindow(productEntry,db):
     try:
         # Get product names and IDs from the database
         products = db.getProductNamesAndIds()
+        if products == []:
+            messageBox.showwarning("Error","No Product Data Found")
+            return
     except Exception as e:
         messageBox.showerror("Error", f"Error fetching product data: {str(e)}")
         return
@@ -927,7 +953,7 @@ def openSelectProductWindow(productEntry,db):
     closeButton = ctk.CTkButton(selectionWindow, text="Close", fg_color= "#e62739",hover_color="#a93226", text_color="white", font=("Times New Roman", 18),command=selectionWindow.destroy)
     closeButton.pack(pady=10)
 
-def addNewProductToSystem(productName, productPrice, db):
+def addNewProductToSystem(brand,productName, productPrice, db):
     """Add a new product to the system and database"""
 
     if productName.strip() == "":
@@ -943,10 +969,10 @@ def addNewProductToSystem(productName, productPrice, db):
 
         # Insert new product into the database
         productData = {
-            "name": productName,
-            "productType": None,
-            "colour": None,
-            "price": productPrice
+            "Brand":brand,
+            "Name": productName,
+            "Product Type": None,
+            "Price": productPrice
         }
         db.addProductData(productData)  # Call method to insert data into the DB
 
@@ -986,26 +1012,33 @@ def openMiscellaneousWindow(productEntry,db):
     entryFrame.pack(pady=20)
 
     # Name Entry
+    brandLabel = ctk.CTkLabel(entryFrame, text="Brand Name:", font=("Times New Roman", 21))
+    brandLabel.grid(row=0, column=0, padx=10, pady=10, sticky="e")
+    brandEntry = ctk.CTkEntry(entryFrame,width= int(window_width*.60), font=("Times New Roman", 18))
+    brandEntry.grid(row=0, column=1, padx=10, pady=10)
+
+    # Name Entry
     nameLabel = ctk.CTkLabel(entryFrame, text="Product Name:", font=("Times New Roman", 21))
-    nameLabel.grid(row=0, column=0, padx=10, pady=10, sticky="e")
+    nameLabel.grid(row=1, column=0, padx=10, pady=10, sticky="e")
     nameEntry = ctk.CTkEntry(entryFrame,width= int(window_width*.60), font=("Times New Roman", 18))
-    nameEntry.grid(row=0, column=1, padx=10, pady=10)
+    nameEntry.grid(row=1, column=1, padx=10, pady=10)
 
     # Quantity Entry
     quantityLabel = ctk.CTkLabel(entryFrame, text="Quantity:", font=("Times New Roman", 21))
-    quantityLabel.grid(row=1, column=0, padx=10, pady=10, sticky="e")
+    quantityLabel.grid(row=2, column=0, padx=10, pady=10, sticky="e")
     quantityEntry = ctk.CTkEntry(entryFrame, width= int(window_width*.60), font=("Times New Roman", 18))
-    quantityEntry.grid(row=1, column=1, padx=10, pady=10)
+    quantityEntry.grid(row=2, column=1, padx=10, pady=10)
 
     # Price Entry
     priceLabel = ctk.CTkLabel(entryFrame, text="Price ($):", font=("Times New Roman", 21))
-    priceLabel.grid(row=2, column=0, padx=10, pady=10, sticky="e")
+    priceLabel.grid(row=3, column=0, padx=10, pady=10, sticky="e")
     priceEntry = ctk.CTkEntry(entryFrame, width= int(window_width*.60), font=("Times New Roman", 18))
-    priceEntry.grid(row=2, column=1, padx=10, pady=10)
+    priceEntry.grid(row=3, column=1, padx=10, pady=10)
 
     # Add Product Functionality
     def addMiscProduct(productEntry):
         try:
+            brand = brandEntry.get()
             productName = nameEntry.get()
             productQuantity = int(quantityEntry.get().strip())
             productPrice = float(priceEntry.get().strip())
@@ -1019,7 +1052,7 @@ def openMiscellaneousWindow(productEntry,db):
             # Add the product to finalProductList
             productDict = {
                 "Product Type": "Miscellaneous",
-                "Colour": "N/A",
+                "Brand":brand,
                 "Name": productName,
                 "Price": productPrice,
                 "Quantity": productQuantity
@@ -1027,7 +1060,7 @@ def openMiscellaneousWindow(productEntry,db):
             finalProductList.append(productDict)
             print("finalProductList ",finalProductList)
 
-            addToProductEntry(productEntry,productName,productQuantity,productPrice)
+            addToProductEntry(productEntry,brand,productName,productQuantity,productPrice)
 
             # Clear the entries
             nameEntry.delete(0, "end")
@@ -1052,7 +1085,7 @@ def openMiscellaneousWindow(productEntry,db):
     closeButton.grid(row=0, column=1, padx=10)
 
     addToSysButton = ctk.CTkButton(buttonFrame, text="Add Product to System", width=int(screen_width * 0.10),
-                              font=("Times New Roman", 21), fg_color= "#393939",hover_color="#252523", command=lambda: addNewProductToSystem(nameEntry.get().strip(),priceEntry.get().strip(),db))
+                              font=("Times New Roman", 21), fg_color= "#393939",hover_color="#252523", command=lambda: addNewProductToSystem(brandEntry.get(),nameEntry.get().strip(),priceEntry.get().strip(),db))
     addToSysButton.grid(row=0, column=2, padx=10)
 
 
@@ -1060,37 +1093,25 @@ def openMiscellaneousWindow(productEntry,db):
 def writeSalesDetails(db, paymentType="efpos"):
     global finalProductList, selectedCustomerDetails
 
-    # Prepare customer details
-    customerName = selectedCustomerDetails.get('Name', 'N/A')
-    customerAddress = selectedCustomerDetails.get('Address', 'N/A')
-    customerPhone = selectedCustomerDetails.get('Phone', 'N/A')
-
     # Retrieve customerID from the database using the customer's name (if applicable)
-    customerID = db.getCustomerIDByName(customerName) if customerName != 'N/A' else None
+    customerID = selectedCustomerDetails.get('Customer ID', 'N/A')
 
     # Get the current date
     sale_date = datetime.now().strftime('%Y-%m-%d')
 
     # Insert sales details into the database
-    for product in finalProductList:
-        salesData = {
-            "date": sale_date,
-            "customerID": customerID,
-            "customerName": customerName,
-            "customerAddress": customerAddress,
-            "customerPhone": customerPhone,
-            "productName": product['Name'],
-            "productType": product['Product Type'],
-            "colour": product['Colour'],
-            "price": product['Price'],
-            "quantity": product['Quantity'],
-            "paymentType": paymentType
-        }
 
-        response = db.addSalesData(salesData)
+    salesData = {
+        "date": sale_date,
+        "customerID": customerID,
+        "productList": finalProductList,
+        "paymentType": paymentType
+    }
 
-        # Log the response message
-        print(response["message"])
+    response = db.addSalesData(salesData)
+
+    # Log the response message
+    print(response["message"])
 
 
 def writePerDaySales(db):
@@ -1273,11 +1294,13 @@ def creditWindow(db):
         creditWin.destroy()
         creditWindow(db)
 
+    # Fetch credit sales data
     creditSales = db.getCreditSalesData()
     if not creditSales:
         messageBox.showwarning("No Credit Data", "No credit sales data found.")
         return
 
+    # Create Credit Sales window
     creditWin = ctk.CTkToplevel()
     creditWin.title("Credit Sales")
     windowWidth = int(screen_width * 0.5)
@@ -1293,87 +1316,105 @@ def creditWindow(db):
     mainFrame = ctk.CTkFrame(creditWin)
     mainFrame.pack(fill="both", expand=True, padx=10, pady=10)
 
-    searchFrame = ctk.CTkFrame(mainFrame)
-    searchFrame.pack(fill="x", padx=10, pady=5)
-
-    searchEntry = ctk.CTkEntry(searchFrame, placeholder_text="Search by Name or Date...")
-    searchEntry.pack(fill="x", padx=5, pady=5)
-
     canvas = tk.Canvas(mainFrame)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = ctk.CTkScrollbar(mainFrame, orientation="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
     canvas.configure(yscrollcommand=scrollbar.set)
-    
+
     contentFrame = ctk.CTkFrame(canvas)
     canvas_window = canvas.create_window((0, 0), window=contentFrame, anchor="n")
 
     def onFrameConfigure(event):
         canvas.configure(scrollregion=canvas.bbox("all"))
+
     contentFrame.bind("<Configure>", onFrameConfigure)
 
-    def updateList():
-        query = searchEntry.get().lower()
-        for widget in contentFrame.winfo_children():
-            widget.destroy()
-        
-        filteredSales = [sale for sale in creditSales if query in sale['customerName'].lower() or query in str(sale['date'])]
-        
-        customers = {}
-        for sale in filteredSales:
-            name = sale['customerName']
-            date = sale['date']
-            
-            if name not in customers:
-                customers[name] = {"address": sale['customerAddress'], "phone": sale['customerPhone'], "purchases": {}, "total": 0}
-            
-            if date not in customers[name]["purchases"]:
-                customers[name]["purchases"][date] = []
-            
-            customers[name]["purchases"][date].append(sale)
-            customers[name]["total"] += sale['price'] * sale['quantity']
+    customers = {}
+    for sale in creditSales:
+        saleID = sale["saleID"]
+        customerID = sale["customerID"]
+        date = sale["date"]
 
-        for customer, details in customers.items():
-            customerFrame = ctk.CTkFrame(contentFrame, width=windowWidth * 0.9)
-            customerFrame.pack(pady=10, padx=10, fill="x")
-            
-            customerLabel = ctk.CTkLabel(
-                customerFrame,
-                text=f"Customer: {customer}\nAddress: {details['address']}\nPhone: {details['phone']}\nTotal Credit: ${details['total']:.2f}",
-                font=("Times New Roman", 18, "bold"),
-                anchor="center"
-            )
-            customerLabel.pack(padx=windowWidth * 0.4, pady=5)
+        if not customerID:
+            continue  # Skip if customerID is missing
 
-            for date, products in details['purchases'].items():
-                dateLabel = ctk.CTkLabel(customerFrame, text=f"Date: {date}", font=("Times New Roman", 16, "bold"), anchor="w")
-                dateLabel.pack(padx=10, pady=5)
-                
-                for product in products:
-                    productLabel = ctk.CTkLabel(customerFrame, text=f"    Product: {product['productName']}\n    Price: ${product['price']}\n    Quantity: {product['quantity']}", font=("Times New Roman", 16), anchor="w")
-                    productLabel.pack(padx=10, pady=5)
+        # Fetch customer details
+        customerData = db.getCustomerByID(customerID)
+        if not customerData:
+            continue  # Skip if customer data not found
+
+        name = customerData["name"]
+        address = customerData["address"]
+        phone = customerData["phone"]
+
+        # Store customer information
+        if customerID not in customers:
+            customers[customerID] = {
+                "name": name,
+                "address": address,
+                "phone": phone,
+                "purchases": []
+            }
+
+        productList = json.loads(sale["productList"])  # Convert JSON to list
+        customers[customerID]["purchases"].append({
+            "saleID": saleID,
+            "date": date,
+            "products": productList
+        })
+
+    def markAsPaid(saleID, paidVar):
+        """Handles marking a sale as paid and refreshing the window"""
+        if paidVar.get():
+            db.updatePaymentType(saleID)
+            refreshWindow()
+        else:
+            messageBox.showwarning("Warning", "Please select 'Mark as Paid' before submitting.")
+
+    for customerID, details in customers.items():
+        customerFrame = ctk.CTkFrame(contentFrame, width=windowWidth * 0.9)
+        customerFrame.pack(pady=10, padx=10, fill="x")
+
+        customerLabel = ctk.CTkLabel(
+            customerFrame,
+            text=f"Customer: {details['name']}\nAddress: {details['address']}\nPhone: {details['phone']}",
+            font=("Times New Roman", 18, "bold"),
+            anchor="center"
+        )
+        customerLabel.pack(padx=windowWidth * 0.4, pady=5)
+
+        for purchase in details["purchases"]:
+            date = purchase["date"]
+            saleID = purchase["saleID"]
+            dateLabel = ctk.CTkLabel(customerFrame, text=f"Date: {date} (Sale ID: {saleID})", font=("Times New Roman", 16, "bold"), anchor="w")
+            dateLabel.pack(padx=10, pady=5)
+
+            for product in purchase["products"]:
+                productLabel = ctk.CTkLabel(customerFrame, text=f"    Product: {product['Name']}\n    Price: ${product['Price']}\n    Quantity: {product['Quantity']}", font=("Times New Roman", 16), anchor="w")
+                productLabel.pack(padx=10, pady=5)
 
             paidVar = tk.BooleanVar()
-            paidRadio = ctk.CTkRadioButton(customerFrame, text="Mark as Paid", variable=paidVar, value=True)
+
+            paidRadio = ctk.CTkCheckBox(customerFrame, text="Mark as Paid", variable=paidVar)
             paidRadio.pack(pady=5)
-            
+
             submitButton = ctk.CTkButton(
                 customerFrame,
                 text="Submit",
                 fg_color="green",
-                command=lambda name=customer: (db.updatePaymentType(name), refreshWindow()) if paidVar.get() else None
+                command=lambda saleID=saleID, var=paidVar: markAsPaid(saleID, var)
             )
             submitButton.pack(pady=5)
 
-    searchEntry.bind("<KeyRelease>", lambda event: updateList())
-    updateList()
-
-    closeButton = ctk.CTkButton(creditWin, text="Close", width=int(screen_width * 0.15), fg_color= "#e62739",hover_color="#a93226", 
+    closeButton = ctk.CTkButton(creditWin, text="Close", width=int(screen_width * 0.15), fg_color="#e62739", hover_color="#a93226", 
                                  font=("Times New Roman", 21, "bold"), 
-                                command=creditWin.destroy)
+                                 command=creditWin.destroy)
     closeButton.pack(pady=20)
+    
     canvas.update_idletasks()
     creditWin.mainloop()
+
 
 
 
@@ -1499,20 +1540,22 @@ def main():
 
     productEntry = ttk.Treeview(
         treeFrame,
-        columns=("Sl.No", "Name", "Quantity", "Unit Price", "Total Price"),
+        columns=("Sl.No","Brand", "Name", "Quantity", "Unit Price", "Total Price"),
         show="headings",
         height=int(screen_height * 0.01),  # Approximate row height
     )
 
     # Set the column widths proportionally
     productEntry.column("Sl.No", width=int(screen_width * 0.05), anchor="center")
-    productEntry.column("Name", width=int(screen_width * 0.58), anchor="w")
+    productEntry.column("Brand", width=int(screen_width * 0.28), anchor="center")
+    productEntry.column("Name", width=int(screen_width * 0.30), anchor="center")
     productEntry.column("Quantity", width=int(screen_width * 0.1), anchor="center")
     productEntry.column("Unit Price", width=int(screen_width  * 0.1), anchor="center")
     productEntry.column("Total Price", width=int(screen_width * 0.15), anchor="center")
 
     # # Add column headers
     productEntry.heading("Sl.No", text="Sl.No")
+    productEntry.heading("Brand", text="Brand")
     productEntry.heading("Name", text="Name")
     productEntry.heading("Quantity", text="Quantity")
     productEntry.heading("Unit Price", text="Unit Price")

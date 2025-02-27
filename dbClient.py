@@ -13,15 +13,19 @@ class DbServer:
     
     def connectToDB(self):
         """Establish a connection to the database"""
-        return mysql.connector.connect(
-            host=self.config["db"]["host"],
-            port=self.config["db"]["port"], 
-            user=self.config["db"]["user"],
-            password=self.config["db"]["password"],
-             database=self.config["db"]["database"],
-            charset="utf8mb4",
-            collation="utf8mb4_general_ci"
-        )
+        try:
+            return mysql.connector.connect(
+                host=self.config["db"]["host"],
+                port=self.config["db"]["port"], 
+                user=self.config["db"]["user"],
+                password=self.config["db"]["password"],
+                database=self.config["db"]["database"],
+                charset="utf8mb4",
+                collation="utf8mb4_general_ci"
+            )
+        except mysql.connector.Error as err:
+            print(f"Database Connection Error: {err}")
+            return None
     
     def executeQuery(self, query, data):
         """Helper function to execute an insert query and return success/failure response"""
@@ -35,6 +39,7 @@ class DbServer:
                 "message": "Query executed successfully."
             }
         except mysql.connector.Error as err:
+            print(err)
             response = {
                 "status": "Failed",
                 "message": f"Error: {err}"
@@ -44,25 +49,57 @@ class DbServer:
             cursor.close()
             conn.close()
         return response
+    
+    def getLatestCustomerID(self):
+        """Retrieve the latest customerID from the database"""
+        query = "SELECT MAX(customerID) as lastID FROM customerData"
+        
+        try:
+            conn = self.connectToDB()
+            cursor = conn.cursor()
+            
+            # Execute the query
+            cursor.execute(query)
+            
+            # Fetch the result
+            result = cursor.fetchone()  # Fetch one row
+            
+            # Check if we have a result and get the lastID
+            if result and result[0] is not None:
+                last_id = result[0]  # lastID is in the first column
+            else:
+                last_id = 0  # If no rows, set last_id to 0
+            
+        except mysql.connector.Error as err:
+            last_id = 0  # In case of an error, return 0
+            
+        finally:
+            cursor.close()
+            conn.close()
+        
+        return last_id + 1  # Increment to get the next customerID
+
 
     def addCustomerData(self, customerData):
         """Add customer data to the customerData table"""
+        customerID = self.getLatestCustomerID()
         query = """
-        INSERT INTO customerData (name, customerType, email, phone, address, state, postcode, ABN)
-        VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
+        INSERT INTO customerData (customerID, name, customerType, email, phone, address, state, postcode, ABN)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         return self.executeQuery(query, (
+            customerID,
             customerData['name'],
-            customerData['customerType'],
-            customerData['email'],
-            customerData['phone'],
-            customerData['address'],
-            customerData['state'],
-            customerData['postcode'],
-            customerData['ABN']
+            customerData.get('customerType'),
+            customerData.get('email'),
+            customerData.get('phone'),
+            customerData.get('address'),
+            customerData.get('state'),
+            customerData.get('postcode'),
+            customerData.get('ABN')
         ))
     
-    def getCustomerName(self):
+    def getCustomerNameAndID(self):
         """Retrieve all customer IDs and names from the customerData table"""
         query = "SELECT customerID, name FROM customerData"
         
@@ -98,6 +135,25 @@ class DbServer:
             conn.close()
         
         return customerID
+    
+    def getCustomerByID(self, customerID):
+        """Fetch customer data by customerID"""
+        query = "SELECT * FROM customerData WHERE customerID = %s"
+        
+        try:
+            conn = self.connectToDB()  # Establish database connection
+            cursor = conn.cursor(dictionary=True)  # Use dictionary cursor to return rows as dictionaries
+            cursor.execute(query, (customerID,))
+            result = cursor.fetchone()  # Fetch the first result
+            customer_data = result if result else None  # Return the customer data or None if no record is found
+        except mysql.connector.Error as err:
+            print(f"Database Error: {err}")
+            customer_data = None
+        finally:
+            cursor.close()  # Close the cursor
+            conn.close()  # Close the connection
+        
+        return customer_data
 
     def getCustomerDetails(self, customerID, name):
         """Retrieve customer details based on customer ID and name"""
@@ -118,20 +174,53 @@ class DbServer:
         finally:
             cursor.close()
             conn.close()
-
+        print("customerDetails : ",customerDetails)
         return customerDetails  # Returns a tuple or None if not found
+    
+
+    def getLatestProductID(self):
+        """Retrieve the latest customerID from the database"""
+        query = "SELECT MAX(productID) as lastID FROM productData"
+        
+        try:
+            conn = self.connectToDB()
+            cursor = conn.cursor()
+            
+            # Execute the query
+            cursor.execute(query)
+            
+            # Fetch the result
+            result = cursor.fetchone()  # Fetch one row
+            
+            # Check if we have a result and get the lastID
+            if result and result[0] is not None:
+                last_id = result[0]  # lastID is in the first column
+            else:
+                last_id = 0  # If no rows, set last_id to 0
+            
+        except mysql.connector.Error as err:
+            last_id = 0  # In case of an error, return 0
+            
+        finally:
+            cursor.close()
+            conn.close()
+        
+        return last_id + 1  # Increment to get the next customerID
+
     
     def addProductData(self, productData):
         """Insert new product into the productData table"""
+        productID = self.getLatestProductID()
         query = """
-        INSERT INTO productData (name, productType, colour, price)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO productData (productID,brand,name, productType, price)
+        VALUES (%s,%s, %s, %s, %s)
         """
         return self.executeQuery(query, (
-            productData["name"],
-            productData["productType"],
-            productData["colour"],
-            productData["price"]
+            productID,
+            productData["Brand"],
+            productData["Name"],
+            productData["Product Type"],
+            productData["Price"]
         ))
     
     def getProductByName(self, productName):
@@ -156,7 +245,7 @@ class DbServer:
     def getProductDetails(self, productName):
         """Retrieve a product by name from the productData table"""
         query = """
-        SELECT name, productType, colour, price
+        SELECT brand,name, productType, price
         FROM productdata
         WHERE name = %s
     """
@@ -176,7 +265,7 @@ class DbServer:
     
     def getProductNamesAndIds(self):
         """Get all product names and IDs from the database"""
-        query = "SELECT productID, Name FROM productdata"
+        query = "SELECT productID, name FROM productdata"
         
         try:
             conn = self.connectToDB()
@@ -256,37 +345,34 @@ class DbServer:
 
     def addSalesData(self, salesData):
         """Add sales transaction data to the salesData table"""
+
+        # Serialize the productList as JSON
+        product_list_json = json.dumps(salesData['productList'])
+
         query = """
-        INSERT INTO salesData (date, customerID, customerName, customerAddress, customerPhone, productName, productType, colour, price, quantity, paymentType)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO salesData (date, customerID, productList, paymentType)
+        VALUES (%s, %s, %s, %s)
         """
         return self.executeQuery(query, (
             salesData['date'],
             salesData['customerID'],
-            salesData['customerName'],
-            salesData['customerAddress'],
-            salesData['customerPhone'],
-            salesData['productName'],
-            salesData['productType'],
-            salesData['colour'],
-            salesData['price'],
-            salesData['quantity'],
+            product_list_json,
             salesData['paymentType']
         ))
     
-    def getSalesByCustomerName(self, customerName):
+    def getSalesByCustomerName(self,customerID):
         """Retrieve all sales records for a given customer name."""
         query = """
-        SELECT date, customerAddress, customerPhone, productName, productType, colour, price, quantity, paymentType
+        SELECT date, customerID, productList, paymentType
         FROM salesData
-        WHERE customerName = %s
+        WHERE customerID = %s
         ORDER BY date DESC
         """
 
         try:
             conn = self.connectToDB()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute(query, (customerName,))
+            cursor.execute(query, (customerID,))
             sales = cursor.fetchall()
         except mysql.connector.Error as err:
             print(f"Database Error: {err}")
@@ -300,8 +386,7 @@ class DbServer:
     def getCreditSalesData(self):
         """Retrieve all sales transactions with payment type 'Credit'"""
         query = """
-        SELECT date, customerName, customerAddress, customerPhone, productName, price, quantity
-        FROM salesData WHERE paymentType = 'Credit'
+        SELECT saleID, date, customerID, productList FROM salesData WHERE paymentType = 'Credit'
         """
         try:
             conn = self.connectToDB()
@@ -316,16 +401,20 @@ class DbServer:
         return results
 
 
-    def updatePaymentType(self, customerName):
-        """Update payment type to 'Paid' for a given customer"""
-        query = "UPDATE salesData SET paymentType = 'Paid' WHERE customerName = %s AND paymentType = 'Credit'"
+    def updatePaymentType(self, saleID):
+        """Update the payment type of a sale to 'Paid'"""
+        query = """
+        UPDATE salesData
+        SET paymentType = 'Paid'
+        WHERE saleID = %s
+        """
         try:
             conn = self.connectToDB()
             cursor = conn.cursor()
-            cursor.execute(query, (customerName,))
+            cursor.execute(query, (saleID,))
             conn.commit()
-        except mysql.connector.Error:
-            conn.rollback()
+        except mysql.connector.Error as e:
+            print("Error updating payment status:", e)
         finally:
             cursor.close()
             conn.close()
