@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import filedialog
 import customtkinter as ctk
 from PIL import Image, ImageTk
 from customtkinter import CTkImage
@@ -323,16 +324,12 @@ def openSales(selectedText, db):
         messageBox.showinfo("No Data", "Customer not found.")
         return
 
-    print("Customer Details: ", custData)
-
     # Fetch sales details for the selected customer from the database
     customer_sales = db.getSalesByCustomerName(customer_id)
     if not customer_sales:
         messageBox.showinfo("No Data", f"No sales details found for {selectedName}.")
         return
     
-    print("customer_sales : ",customer_sales)
-
     # Create the sales details window
     salesWindow = ctk.CTkToplevel()
     salesWindow.title(f"Sales Details - {selectedName}")
@@ -386,20 +383,17 @@ def openSales(selectedText, db):
     for sale in customer_sales:
         date = sale["date"]
         # Parse the productList from string to list of dictionaries
-        product_list = ast.literal_eval(sale["productList"])
+        product_list = json.loads(sale["productList"])
 
         if date not in grouped_sales:
             grouped_sales[date] = []
         grouped_sales[date].append(product_list)
-
-    print("grouped_sales : ",grouped_sales)
 
     # Loop through grouped sales and display products under the same date
     for date, sales in grouped_sales.items():
         # Calculate total price for that date
         total_price = 0
         for sale in sales:
-            print("Sale : ",sale)
             for product in sale:
                 total_price += float(product["Price"]) * int(product["Quantity"])
 
@@ -657,6 +651,7 @@ def openAddProductWindow(productEntry, db):
                 "Brand": entries["Brand"].get(),
                 "Name": entries["Name"].get(),
                 "Product Type": entries["Product Type"].get(),
+                "Cost Price": None,
                 "Price": float(entries["Price"].get()),
             }
             quantity = int(entries["Quantity"].get())  # Quantity for CRM only
@@ -972,6 +967,7 @@ def addNewProductToSystem(brand,productName, productPrice, db):
             "Brand":brand,
             "Name": productName,
             "Product Type": None,
+            "Cost Price": None,
             "Price": productPrice
         }
         db.addProductData(productData)  # Call method to insert data into the DB
@@ -1416,6 +1412,86 @@ def creditWindow(db):
     creditWin.mainloop()
 
 
+def uploadCSV(db):
+    global screen_width, screen_height
+
+    def selectFile():
+        """Opens file dialog and displays selected file path"""
+        filePath = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
+        if filePath:
+            fileEntry.delete(0, tk.END)
+            fileEntry.insert(0, filePath)
+
+    def processCSV():
+        """Reads CSV and uploads data to database"""
+        filePath = fileEntry.get()
+        if not filePath:
+            messageBox.showwarning("No File Selected", "Please select a CSV file first.")
+            return
+
+        try:
+            df = pd.read_csv(filePath)
+
+            required_columns = {"BRAND", "INK NO", "COST PRICE", "SELLING PRICE"}
+            if not required_columns.issubset(df.columns):
+                messageBox.showerror("Invalid CSV", "CSV file must have columns: Brand, INK NO, Cost Price, Selling Price")
+                return
+
+            # Replace NaN values with empty strings or 0
+            df.fillna({"Brand": "", "Name": "", "Cost Price": 0, "Selling Price": 0}, inplace=True)
+
+            for _, row in df.iterrows():
+                productData = {
+                    "Brand": str(row["BRAND"]).strip(),
+                    "Name": str(row["INK NO"]).strip(),
+                    "Product Type": None,
+                    "Cost Price": float(row["COST PRICE"]) if pd.notna(row["COST PRICE"]) else 0.0,
+                    "Price": float(row["SELLING PRICE"]) if pd.notna(row["SELLING PRICE"]) else 0.0
+                }
+                db.addProductData(productData)
+
+            messageBox.showinfo("Success", "CSV Data Uploaded Successfully!")
+
+        except Exception as e:
+            messageBox.showerror("Error", f"Failed to process CSV: {e}")
+
+
+    # Create CSV Upload Window
+    uploadWin = ctk.CTkToplevel()
+    uploadWin.title("Upload CSV")
+    windowWidth = int(screen_width * 0.5)
+    windowHeight = int(screen_height * 0.4)
+    xCoordinate = (screen_width - windowWidth) // 2
+    yCoordinate = (screen_height - windowHeight) // 2
+    uploadWin.geometry(f"{windowWidth}x{windowHeight}+{xCoordinate}+{yCoordinate}")
+    uploadWin.resizable(False, False)
+    uploadWin.transient()
+    uploadWin.grab_set()
+    uploadWin.focus_force()
+
+    # Main Frame
+    mainFrame = ctk.CTkFrame(uploadWin)
+    mainFrame.pack(fill="both", expand=True, padx=10, pady=10)
+
+    # File Selection
+    fileFrame = ctk.CTkFrame(mainFrame)
+    fileFrame.pack(fill="x", padx=10, pady=10)
+
+    fileEntry = ctk.CTkEntry(fileFrame, placeholder_text="Select a CSV file...")
+    fileEntry.pack(side="left", fill="x", expand=True, padx=5, pady=5)
+
+    selectButton = ctk.CTkButton(fileFrame, text="Browse", fg_color="blue", command=selectFile)
+    selectButton.pack(side="right", padx=5)
+
+    # Upload Button
+    uploadButton = ctk.CTkButton(mainFrame, text="Upload", fg_color="green", command=processCSV)
+    uploadButton.pack(pady=10)
+
+    # Close Button
+    closeButton = ctk.CTkButton(uploadWin, text="Close", fg_color="#e62739", command=uploadWin.destroy)
+    closeButton.pack(pady=10)
+
+    uploadWin.mainloop()
 
 
 def main():
@@ -1473,6 +1549,9 @@ def main():
 
     creditButton = ctk.CTkButton(navigationFrame, text="Credits", width=int(screen_width * 0.15),fg_color= "#dfd8c8",hover_color="#252523", text_color="black", font=("Times New Roman", int(21), "bold"),command=lambda:creditWindow(db))
     creditButton.grid(row=4, column=0, padx=5, pady=20)
+
+    uploadButton = ctk.CTkButton(navigationFrame, text="Upload Data", width=int(screen_width * 0.15),fg_color= "#dfd8c8",hover_color="#252523", text_color="black", font=("Times New Roman", int(21), "bold"),command=lambda:uploadCSV(db))
+    uploadButton.grid(row=5, column=0, padx=5, pady=20)
 
     # Create the main content frame on the right side, starting from the second column
     mainContentFrame = ctk.CTkFrame(root, width=int(screen_width * 0.75 ),fg_color="#dfd8c8")

@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS productData (
     brand VARCHAR(50),
     name VARCHAR(50) NOT NULL,
     productType VARCHAR(50),
-    price DECIMAL(10,2)
+    costPrice DECIMAL(10,2),
+    sellingPrice DECIMAL(10,2)
 );
 
 -- Step 4: Create PerdaySale Table

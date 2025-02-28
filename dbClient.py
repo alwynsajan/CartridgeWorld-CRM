@@ -212,14 +212,15 @@ class DbServer:
         """Insert new product into the productData table"""
         productID = self.getLatestProductID()
         query = """
-        INSERT INTO productData (productID,brand,name, productType, price)
-        VALUES (%s,%s, %s, %s, %s)
+        INSERT INTO productData (productID, brand, name, productType, costPrice, sellingPrice)
+        VALUES (%s, %s, %s, %s, %s, %s)
         """
         return self.executeQuery(query, (
             productID,
             productData["Brand"],
             productData["Name"],
             productData["Product Type"],
+            productData["Cost Price"],
             productData["Price"]
         ))
     
