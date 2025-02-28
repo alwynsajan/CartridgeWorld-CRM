@@ -209,20 +209,36 @@ class DbServer:
 
     
     def addProductData(self, productData):
-        """Insert new product into the productData table"""
-        productID = self.getLatestProductID()
+        """Insert new product into the productData table only if name is unique"""
+
+        # Check if the product name already exists
+        check_query = "SELECT COUNT(*) FROM productData WHERE name = %s"
+        conn = self.connectToDB()
+        cursor = conn.cursor()
+        cursor.execute(check_query, (productData["Name"],))
+        count = cursor.fetchone()[0]
+
+        if count > 0:
+            cursor.close()
+            conn.close()
+            print(f"Skipped: Product '{productData['Name']}' already exists.")  # Debugging
+            return  # Skip inserting duplicate product
+
+        # Insert the new product
         query = """
-        INSERT INTO productData (productID, brand, name, productType, costPrice, sellingPrice)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO productData (brand, name, productType, costPrice, sellingPrice)
+        VALUES (%s, %s, %s, %s, %s)
         """
-        return self.executeQuery(query, (
-            productID,
+        self.executeQuery(query, (
             productData["Brand"],
             productData["Name"],
             productData["Product Type"],
             productData["Cost Price"],
             productData["Price"]
         ))
+
+        cursor.close()
+        conn.close()
     
     def getProductByName(self, productName):
         """Check if a product with the given name exists in the productData table."""
@@ -246,7 +262,7 @@ class DbServer:
     def getProductDetails(self, productName):
         """Retrieve a product by name from the productData table"""
         query = """
-        SELECT brand,name, productType, price
+        SELECT brand,name, productType, sellingprice
         FROM productdata
         WHERE name = %s
     """
@@ -264,9 +280,9 @@ class DbServer:
 
         return product  # Returns tuple (productID, Name, Product_Type, Colour, Price) or None
     
-    def getProductNamesAndIds(self):
+    def getProductID_Brand_Name(self):
         """Get all product names and IDs from the database"""
-        query = "SELECT productID, name FROM productdata"
+        query = "SELECT productID,brand, name FROM productdata"
         
         try:
             conn = self.connectToDB()

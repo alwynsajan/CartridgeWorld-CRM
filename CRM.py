@@ -843,7 +843,11 @@ def showProductDetails(selectedProduct, productEntry):
 
 def selectProduct(event, productEntry, listbox, db):
 
-    selectedName = listbox.get(listbox.curselection())
+    selectedText = listbox.get(listbox.curselection())
+
+    selectedName = selectedText.split(" - ")[1]
+
+    print(selectedName)
 
     # Fetch product details based on the selected name
     try:
@@ -869,10 +873,10 @@ def updateListbox(searchEntry, productListbox, products):
 
     """Update the listbox with filtered product names"""
     search_query = searchEntry.get().lower()
-    filtered_products = [product for product in products if search_query in product[1].lower()]
+    filtered_products = [product for product in products if search_query in product[1].lower() or search_query in product[2].lower()]
     productListbox.delete(0, tk.END)  # Clear existing entries
     for product in filtered_products:
-        productListbox.insert(tk.END, product[1])  # Insert product name
+        productListbox.insert(tk.END, f"{product[0]} : {product[1]} - {product[2]}")  # Insert product name
 
 def openSelectProductWindow(productEntry,db):
 
@@ -883,7 +887,7 @@ def openSelectProductWindow(productEntry,db):
 
     try:
         # Get product names and IDs from the database
-        products = db.getProductNamesAndIds()
+        products = db.getProductID_Brand_Name()
         if products == []:
             messageBox.showwarning("Error","No Product Data Found")
             return
