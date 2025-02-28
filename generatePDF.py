@@ -32,6 +32,7 @@ def calculateItemPrices(productData):
     subtotal = 0
     totalGst = 0
     for item in productData:
+        itemBrand = item['Brand']
         itemName = item['Name']
         quantity = item['Quantity']
         pricePerUnit = item['Price']
@@ -40,7 +41,7 @@ def calculateItemPrices(productData):
         totalPrice = round((unitPrice + gst) * quantity, 2)
         subtotal += unitPrice * quantity
         totalGst += gst * quantity
-        calculatedItems.append([itemName, quantity, unitPrice, gst, totalPrice])
+        calculatedItems.append([(itemBrand + " "+ itemName), quantity, unitPrice, gst, totalPrice])
     total = subtotal + totalGst
     return calculatedItems, subtotal, totalGst, total
 
@@ -153,4 +154,6 @@ def generateInvoice(customerData, productData):
     # Build the PDF
     pdf.build(elements)
     print(f"Invoice generated: {invoiceFilename}")
+
+    return invoiceFilename
 

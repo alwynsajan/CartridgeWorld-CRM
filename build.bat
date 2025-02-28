@@ -16,11 +16,11 @@ pyinstaller --onefile --icon=icon.png ^
   --collect-all mysql.connector ^
   --add-binary "C:\Program Files\MySQL\MySQL Server 8.0\lib\libmysql.dll;." ^
   --add-binary "C:\Program Files\MySQL\MySQL Server 8.0\lib\plugin;plugin" ^
-  main.py
+  CRM.py
 :: Copy config.json and CW.png to the dist folder
 echo Copying config.json and CW.png to dist folder...
 xcopy /y config.json dist\
-xcopy /y CW.png dist\
+xcopy /y invoiceLogo.JPEG dist\
 
 echo Build complete. EXE file is in the 'dist' folder.
 pause

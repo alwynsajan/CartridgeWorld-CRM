@@ -1136,7 +1136,7 @@ def writePerDaySales(db):
     print(response["message"])
 
 
-def printPDF(filename="output.pdf"):
+def printPDF(invoiceFilename):
     """Print the PDF using Adobe Reader or Edge."""
     try:
         # Load the configuration file
@@ -1147,8 +1147,9 @@ def printPDF(filename="output.pdf"):
         acrobat_path = config.get("adobePath", r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe")
 
         # Run the print command
-        subprocess.run([acrobat_path, "/t", filename], check=True)
-        print(f"Printing: {filename}")
+        print(f"Printing before: {invoiceFilename}")
+        subprocess.run([acrobat_path, "/t", invoiceFilename], check=True)
+        print(f"Printing: {invoiceFilename}")
         messageBox.showinfo("Success", "PDF sent to printer.")
     except Exception as e:
         messageBox.showerror("Error", f"Failed to print: {e}")
@@ -1201,8 +1202,8 @@ def printInvoice(db):
         # Proceed with sales processing
         writePerDaySales(db)
         writeSalesDetails(db,selected_payment)
-        generatePDF.generateInvoice(selectedCustomerDetails,finalProductList)
-        printPDF()
+        invoiceFilename = generatePDF.generateInvoice(selectedCustomerDetails,finalProductList)
+        printPDF(invoiceFilename)
         
         # Close the payment window
         paymentWindow.destroy()
@@ -1566,7 +1567,7 @@ def main():
     textFrame.pack(pady=20, fill="both", expand=True)
 
     textLabel = ctk.CTkLabel(textFrame, text="K.P.K ASSOCIATES", font=("Times New Roman", int(window_height * 0.05), "bold"))
-    textLabel.pack(pady=20, padx=20, anchor="center")
+    textLabel.pack(pady=20, padx=20, anchor="w")
 
     # Customer section in a black-bordered box (10% increased sizes)
     customerFrame = ctk.CTkFrame(mainContentFrame, fg_color="#dfd8c8")
@@ -1630,8 +1631,8 @@ def main():
 
     # Set the column widths proportionally
     productEntry.column("Sl.No", width=int(screen_width * 0.05), anchor="center")
-    productEntry.column("Brand", width=int(screen_width * 0.28), anchor="center")
-    productEntry.column("Name", width=int(screen_width * 0.30), anchor="center")
+    productEntry.column("Brand", width=int(screen_width * 0.10), anchor="center")
+    productEntry.column("Name", width=int(screen_width * 0.15), anchor="center")
     productEntry.column("Quantity", width=int(screen_width * 0.1), anchor="center")
     productEntry.column("Unit Price", width=int(screen_width  * 0.1), anchor="center")
     productEntry.column("Total Price", width=int(screen_width * 0.15), anchor="center")
@@ -1686,9 +1687,6 @@ def main():
     # Increased button size (10% increase)
     printInvoiceButton = ctk.CTkButton(actionFrame, text="Print Invoice", width=int(screen_width * .15),fg_color= "#393939",hover_color="#252523",  font=("Times New Roman", int(21)),command = lambda:printInvoice(db))
     printInvoiceButton.grid(row=0, column=0, padx=int(10 * 1.5), pady=int(5 * 1.5))
-
-    # printInvoiceButton = ctk.CTkButton(actionFrame, text=" Print Invoice ", width=int(screen_width * .15),fg_color= "#393939",hover_color="#252523",  font=("Times New Roman", int(21)))
-    # printInvoiceButton.grid(row=0, column=1, padx=int(10 * 1.5), pady=int(5 * 1.5))
 
     clearAllButton = ctk.CTkButton(actionFrame, text=" Clear All ", width=int(screen_width * .15),fg_color= "#e62739",hover_color="#a93226",  font=("Times New Roman", int(21)), command = clear_data)
     clearAllButton.grid(row=0, column=2, padx=int(10 * 1.5), pady=int(5 * 1.5))
