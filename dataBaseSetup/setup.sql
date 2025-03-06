@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS salesData (
     productList VARCHAR(500),
     paymentType VARCHAR(50) NOT NULL,
     FOREIGN KEY (customerID) REFERENCES customerData(customerID) ON DELETE SET NULL
-);
+)AUTO_INCREMENT = 1000;
 
 -- Step 6: Verify Tables
 SHOW TABLES;

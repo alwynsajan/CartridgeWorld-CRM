@@ -436,4 +436,32 @@ class DbServer:
             cursor.close()
             conn.close()
 
+    def getLatestSalesID(self):
+        """Retrieve the latest saleID from the database"""
+        query = "SELECT MAX(saleID) as lastID FROM salesData"
 
+        try:
+            conn = self.connectToDB()
+            cursor = conn.cursor()
+
+            # Execute the query
+            cursor.execute(query)
+
+            # Fetch the result
+            result = cursor.fetchone()  # Fetch one row
+
+            # Check if we have a result and get the lastID
+            if result and result[0] is not None:
+                last_id = result[0]  # lastID is in the first column
+            else:
+                last_id = 1000  # If no rows, set last_id to 999 so the first sale starts at 1000
+
+        except mysql.connector.Error as err:
+            print(f"Error fetching last saleID: {err}")
+            last_id = 1000  # In case of an error, return 999 to ensure first sale starts at 1000
+
+        finally:
+            cursor.close()
+            conn.close()
+
+        return last_id 

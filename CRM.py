@@ -14,7 +14,7 @@ from reportlab.pdfgen import canvas
 import json
 import generatePDF
 from dbClient import DbServer
-
+import threading
 # Set appearance mode to light
 ctk.set_appearance_mode("light")
 
@@ -562,13 +562,15 @@ def removeProduct(productEntry):
         for item in selectedItems:
             # Get product details of the selected item
             product = productEntry.item(item, "values")
+            print("Selectted Product :",product)
             # Find and remove the corresponding product from finalProductList
             for prod in finalProductList:
-                if (prod["Name"] == product[1] and int(prod["Quantity"]) == int(product[2])):
+                if prod["Name"].strip().lower() == product[2].strip().lower():
                     finalProductList.remove(prod)
                     break
 
             print(f"Removed from finalProductList: {product}")
+            print("List after pdt removed ",finalProductList)
             productEntry.delete(item)  # Remove the selected items from the tree
 
         rebuild_serial_numbers()
@@ -674,7 +676,7 @@ def openAddProductWindow(productEntry, db):
 
                 # Check if the product already exists in the finalProductList
                 for product in finalProductList:
-                    if product['Name'].lower() == productDetails['Name'].lower():
+                    if product['Name'].lower().strip() == productDetails['Name'].lower().strip():
                         # Update the quantity and price for the existing product
                         product['Quantity'] += quantity
                         product['Price'] = productDetails["Price"]  # Update unit price
@@ -682,11 +684,11 @@ def openAddProductWindow(productEntry, db):
                         # Update the corresponding row in the TreeView
                         for child in productEntry.get_children():
                             values = productEntry.item(child, 'values')
-                            if values[1].lower() == productDetails['Name'].lower():  # Match product name
+                            if values[2].lower() == productDetails['Name'].lower():  # Match product name
                                 # Update quantity and total price in TreeView
                                 total_price = product['Quantity'] * product['Price']
-                                productEntry.item(child, values=(values[0], values[1], product['Quantity'], 
-                                                                f"${product['Price']:.2f}", f"${total_price:.2f}"))
+                                productEntry.item(child, values=(values[0], values[1], values[2], product['Quantity'], 
+                                         f"${product['Price']:.2f}", f"${total_price:.2f}"))
                                 break
                         
                         # Close the details window
@@ -800,12 +802,11 @@ def showProductDetails(selectedProduct, productEntry):
                     # Update the corresponding row in the Treeview
                     for child in productEntry.get_children():
                         values = productEntry.item(child, 'values')
-                        if values[1].lower() == selectedProduct['Name'].lower():  # Match product name
+                        if values[2].lower() == selectedProduct['Name'].lower():  # Match product name
                             # Update quantity and total price in Treeview
                             total_price = product['Quantity'] * product['Price']
-                            productEntry.item(child, values=(values[0], values[1], product['Quantity'], 
-                                                            f"${product['Price']:.2f}", f"${total_price:.2f}"))
-                            break
+                            productEntry.item(child, values=(values[0], values[1], values[2], product['Quantity'], 
+                                         f"${product['Price']:.2f}", f"${total_price:.2f}"))
 
                     # Close the details window
                     detailsWindow.destroy()
@@ -1094,7 +1095,7 @@ def writeSalesDetails(db, paymentType="efpos"):
     global finalProductList, selectedCustomerDetails
 
     # Retrieve customerID from the database using the customer's name (if applicable)
-    customerID = selectedCustomerDetails.get('Customer ID', 'N/A')
+    customerID = selectedCustomerDetails.get('Customer ID', None)
 
     # Get the current date
     sale_date = datetime.now().strftime('%Y-%m-%d')
@@ -1137,22 +1138,26 @@ def writePerDaySales(db):
 
 
 def printPDF(invoiceFilename):
-    """Print the PDF using Adobe Reader or Edge."""
-    try:
-        # Load the configuration file
-        with open("config.json", "r") as config_file:
-            config = json.load(config_file)
+    """Print the PDF using Adobe Reader or Edge in a new thread."""
+    def print_task():
+        try:
+            # Load the configuration file
+            with open("config.json", "r") as config_file:
+                config = json.load(config_file)
 
-        # Get the Adobe Acrobat path from the config
-        acrobat_path = config.get("adobePath", r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe")
+            # Get the Adobe Acrobat path from the config
+            acrobat_path = config.get("adobePath", r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe")
 
-        # Run the print command
-        print(f"Printing before: {invoiceFilename}")
-        subprocess.run([acrobat_path, "/t", invoiceFilename], check=True)
-        print(f"Printing: {invoiceFilename}")
-        messageBox.showinfo("Success", "PDF sent to printer.")
-    except Exception as e:
-        messageBox.showerror("Error", f"Failed to print: {e}")
+            # Run the print command
+            print(f"Printing before: {invoiceFilename}")
+            subprocess.run([acrobat_path, "/t", invoiceFilename], check=True)
+            print(f"Printing: {invoiceFilename}")
+            messageBox.showinfo("Success", "PDF sent to printer.")
+        except Exception as e:
+            messageBox.showerror("Error", f"Failed to print: {e}")
+
+    # Start the printing operation in a new thread
+    threading.Thread(target=print_task, daemon=True).start()
 
 def printInvoice(db):
     global screen_width, screen_height, finalProductList, selectedCustomerDetails
@@ -1202,9 +1207,9 @@ def printInvoice(db):
         # Proceed with sales processing
         writePerDaySales(db)
         writeSalesDetails(db,selected_payment)
-        invoiceFilename = generatePDF.generateInvoice(selectedCustomerDetails,finalProductList)
+        invoiceNo = db.getLatestSalesID()
+        invoiceFilename = generatePDF.generateInvoice(selectedCustomerDetails,finalProductList,invoiceNo)
         printPDF(invoiceFilename)
-        
         # Close the payment window
         paymentWindow.destroy()
 
@@ -1631,8 +1636,8 @@ def main():
 
     # Set the column widths proportionally
     productEntry.column("Sl.No", width=int(screen_width * 0.05), anchor="center")
-    productEntry.column("Brand", width=int(screen_width * 0.10), anchor="center")
-    productEntry.column("Name", width=int(screen_width * 0.15), anchor="center")
+    productEntry.column("Brand", width=int(screen_width * 0.25), anchor="center")
+    productEntry.column("Name", width=int(screen_width * 0.25), anchor="center")
     productEntry.column("Quantity", width=int(screen_width * 0.1), anchor="center")
     productEntry.column("Unit Price", width=int(screen_width  * 0.1), anchor="center")
     productEntry.column("Total Price", width=int(screen_width * 0.15), anchor="center")
