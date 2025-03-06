@@ -36,7 +36,11 @@ def calculateItemPrices(productData):
 
 def generateInvoice(customerData, productData, invoiceNo):
     
-    invoicesDir = "Invoices"
+    # Get the current month and year for the folder name
+    current_month_year = datetime.datetime.now().strftime("%B_%Y")  # Example: "July_2025"
+    
+    # Create the directory for the current month if it doesn't exist
+    invoicesDir = os.path.join("Invoices", current_month_year)
     os.makedirs(invoicesDir, exist_ok=True)
 
     invoiceFilename = os.path.join(invoicesDir, f"invoice_{invoiceNo}.pdf")
