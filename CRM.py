@@ -27,6 +27,7 @@ screen_width = None
 screen_height = None
 finalProductList = []
 currentSLNo = 1
+customerEntry,productEntry = None,None
 
 def openAddCustomerWindow(customerEntry,db):
     global addCustomerWindow,selectedCustomerDetails,screen_width,screen_height
@@ -1149,9 +1150,7 @@ def printPDF(invoiceFilename):
             acrobat_path = config.get("adobePath", r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe")
 
             # Run the print command
-            print(f"Printing before: {invoiceFilename}")
             subprocess.run([acrobat_path, "/t", invoiceFilename], check=True)
-            print(f"Printing: {invoiceFilename}")
             messageBox.showinfo("Success", "PDF sent to printer.")
         except Exception as e:
             messageBox.showerror("Error", f"Failed to print: {e}")
@@ -1181,8 +1180,8 @@ def printInvoice(db):
     paymentWindow.grab_set()
     paymentWindow.focus_force()
 
-    # Variable to store selected payment type
-    payment_type = tk.StringVar(value="")  # Default value is empty string
+    # Variable to store selected payment type, default to "Efpos"
+    payment_type = tk.StringVar(value="Efpos") 
 
     # Create radio buttons for payment types
     cashRadio = ctk.CTkRadioButton(paymentWindow, text="Cash", variable=payment_type, value="Cash", font=("Times New Roman", 16))
@@ -1211,6 +1210,7 @@ def printInvoice(db):
         invoiceFilename = generatePDF.generateInvoice(selectedCustomerDetails,finalProductList,invoiceNo)
         printPDF(invoiceFilename)
         # Close the payment window
+        clear_data()
         paymentWindow.destroy()
 
     confirmButton = ctk.CTkButton(paymentWindow, text="Confirm", command=onConfirm, font=("Times New Roman", 16))
@@ -1503,10 +1503,20 @@ def uploadCSV(db):
 
     uploadWin.mainloop()
 
+# Home button in the navigation frame (highlighted as selected, 10% increased size)
+def clear_data():
+    global selectedCustomerDetails,finalProductList,currentSLNo,customerEntry,productEntry
+    # Clear the data in customerEntry and productEntry
+    customerEntry.delete(0, tk.END)  # Clears customer entry field
+    for item in productEntry.get_children():
+        productEntry.delete(item)
+    selectedCustomerDetails = {}
+    finalProductList = []
+    currentSLNo = 1
 
 def main():
 
-    global screen_width,screen_height,finalProductList
+    global screen_width,screen_height,finalProductList,customerEntry,productEntry
 
     # Initialize the dbServer class
     db = DbServer()
@@ -1532,17 +1542,6 @@ def main():
     # Create the navigation frame on the left side (10% increased) 
     navigationFrame = ctk.CTkFrame(root, width=int(screen_width * 0.25), height=int(screen_height), corner_radius=0, fg_color="#393939")
     navigationFrame.grid(row=0, column=0, sticky="ns")
-
-    # Home button in the navigation frame (highlighted as selected, 10% increased size)
-    def clear_data():
-        global selectedCustomerDetails,finalProductList,currentSLNo
-        # Clear the data in customerEntry and productEntry
-        customerEntry.delete(0, tk.END)  # Clears customer entry field
-        for item in productEntry.get_children():
-            productEntry.delete(item)
-        selectedCustomerDetails = {}
-        finalProductList = []
-        currentSLNo = 1
 
     # Home button - Now enabled and clears data
     homeButton = ctk.CTkButton(navigationFrame, text="Home", width=int(screen_width * 0.15),fg_color= "#dfd8c8",hover_color="#252523", text_color="black", font=("Times New Roman", int(21), "bold"), command=clear_data)
@@ -1636,8 +1635,8 @@ def main():
 
     # Set the column widths proportionally
     productEntry.column("Sl.No", width=int(screen_width * 0.05), anchor="center")
-    productEntry.column("Brand", width=int(screen_width * 0.25), anchor="center")
-    productEntry.column("Name", width=int(screen_width * 0.25), anchor="center")
+    productEntry.column("Brand", width=int(screen_width * 0.20), anchor="center")
+    productEntry.column("Name", width=int(screen_width * 0.20), anchor="center")
     productEntry.column("Quantity", width=int(screen_width * 0.1), anchor="center")
     productEntry.column("Unit Price", width=int(screen_width  * 0.1), anchor="center")
     productEntry.column("Total Price", width=int(screen_width * 0.15), anchor="center")
