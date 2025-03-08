@@ -174,7 +174,7 @@ def saveCustomer(customerTypeVar, nameEntry, addressEntry, stateEntry, postcodeE
     customerEntry.delete(0, "end")
     customerEntry.insert(0, f"Name: {selectedCustomerDetails['Name']}")
 
-    print("Selected Customer details : ",selectedCustomerDetails)
+    # print("Selected Customer details : ",selectedCustomerDetails)
 
     # Prepare the data to write to the CSV
     customer_data = [customerType, name, address, state, postcode, phone, email, abn]
@@ -193,7 +193,7 @@ def saveCustomer(customerTypeVar, nameEntry, addressEntry, stateEntry, postcodeE
             if file.tell() == 0:
                 writer.writerow(['Customer Type', 'Name', 'Address', 'State', 'Postcode', 'Phone', 'Email', 'ABN'])
             writer.writerow(customer_data)
-        print("Customer data saved successfully!")
+        # print("Customer data saved successfully!")
     except Exception as e:
         print(f"Error saving customer data: {e}")
 
@@ -266,7 +266,7 @@ def showCustomerDetails(selectedCustomer, customerEntry):
         global selectedCustomerDetails, selectionWindow
         customerEntry.delete(0, tk.END)
         selectedCustomerDetails = selectedCustomer
-        print("Selected Customer details : ",selectedCustomerDetails)
+        # print("Selected Customer details : ",selectedCustomerDetails)
         customerEntry.delete(0, "end")
         customerEntry.insert(0, f"Name: {selectedCustomer['Name']}")
         detailsWindow.destroy()
@@ -450,8 +450,6 @@ def openCustomerSelection(customerEntry,flag,db):
         messageBox.showinfo("No Customers", "No customer records found.")
         return
     
-    print("customerList : ", customerList)
-
     selectionWindow = ctk.CTkToplevel()
     selectionWindow.title("Select Customer")
 
@@ -563,15 +561,11 @@ def removeProduct(productEntry):
         for item in selectedItems:
             # Get product details of the selected item
             product = productEntry.item(item, "values")
-            print("Selectted Product :",product)
             # Find and remove the corresponding product from finalProductList
             for prod in finalProductList:
                 if prod["Name"].strip().lower() == product[2].strip().lower():
                     finalProductList.remove(prod)
                     break
-
-            print(f"Removed from finalProductList: {product}")
-            print("List after pdt removed ",finalProductList)
             productEntry.delete(item)  # Remove the selected items from the tree
 
         rebuild_serial_numbers()
@@ -693,14 +687,14 @@ def openAddProductWindow(productEntry, db):
                                 break
                         
                         # Close the details window
-                        print("finalProductList:", finalProductList)
+                        # print("finalProductList:", finalProductList)
                         addProductWindow.destroy()
                         return
 
                 # Add the product to the finalProductList
                 productDetails['Quantity'] = quantity
                 finalProductList.append(productDetails)
-                print("finalProductList:", finalProductList)
+                # print("finalProductList:", finalProductList)
 
                 # Update the TreeView in CRM
                 addToProductEntry(productEntry,productDetails["Brand"], productDetails["Name"], quantity, productDetails["Price"])
@@ -791,8 +785,6 @@ def showProductDetails(selectedProduct, productEntry):
             selectedProduct["Quantity"] = int(quantityEntry.get())
             selectedProduct["Price"] = float(priceEntry.get())
 
-            print("selectedProduct in select PDDT : ",selectedProduct)
-
             # Check if the product already exists in the finalProductList
             for product in finalProductList:
                 if product['Name'].lower() == selectedProduct['Name'].lower():
@@ -811,11 +803,11 @@ def showProductDetails(selectedProduct, productEntry):
 
                     # Close the details window
                     detailsWindow.destroy()
-                    print("finalProductList : ",finalProductList)
+                    # print("finalProductList : ",finalProductList)
                     return
 
             finalProductList.append(selectedProduct)
-            print("finalProductList : ",finalProductList)
+            # print("finalProductList : ",finalProductList)
 
             addToProductEntry(productEntry,selectedProduct['Brand'],selectedProduct['Name'],selectedProduct['Quantity'],selectedProduct['Price'])
             detailsWindow.destroy()
@@ -848,8 +840,6 @@ def selectProduct(event, productEntry, listbox, db):
     selectedText = listbox.get(listbox.curselection())
 
     selectedName = selectedText.split(" - ")[1]
-
-    print(selectedName)
 
     # Fetch product details based on the selected name
     try:
@@ -1113,7 +1103,7 @@ def writeSalesDetails(db, paymentType="eftpos"):
     response = db.addSalesData(salesData)
 
     # Log the response message
-    print(response["message"])
+    # print(response["message"])
 
 
 def writePerDaySales(db):
@@ -1135,7 +1125,7 @@ def writePerDaySales(db):
     response = db.addPerDaySale(saleData)
 
     # Log response message
-    print(response["message"])
+    # print(response["message"])
 
 
 def printPDF(invoiceFilename):
@@ -1158,7 +1148,7 @@ def printPDF(invoiceFilename):
     # Start the printing operation in a new thread
     threading.Thread(target=print_task, daemon=True).start()
 
-def printInvoice(db):
+def printInvoice(db,printflag):
     global screen_width, screen_height, finalProductList, selectedCustomerDetails
 
     if finalProductList == []:
@@ -1208,7 +1198,10 @@ def printInvoice(db):
         writeSalesDetails(db,selected_payment)
         invoiceNo = db.getLatestSalesID()
         invoiceFilename = generatePDF.generateInvoice(selectedCustomerDetails,finalProductList,invoiceNo)
-        printPDF(invoiceFilename)
+        if printflag:
+            printPDF(invoiceFilename)
+        else:
+            messageBox.showinfo("Sales Saved", "Sales saved successfully!") 
         # Close the payment window
         clear_data()
         paymentWindow.destroy()
@@ -1523,7 +1516,21 @@ def main():
 
     # Create the main window with updated dimensions (10% increased)
     root = ctk.CTk()  # Use customtkinter CTk instead of tk.Tk
-    root.title("Cartridge World")
+    root.title("K.P.K")
+
+    # Set the window icon (Use ICO file)
+    root.iconbitmap("icon.ico")  # Sets the icon for the window title bar
+
+    # Set the taskbar icon (For Windows)
+    from ctypes import windll
+    appid = "mycompany.myapp.1.0"  # Unique ID for your app (change if needed)
+    windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
+
+    # Load an image to set as the taskbar icon
+    import ctypes
+    taskbar_icon = "icon.ico"  # Ensure this file exists
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("KPK.App")
+    root.wm_iconbitmap(taskbar_icon)  # Apply taskbar icon
     
     # Get the screen width and height
     screen_width = root.winfo_screenwidth()
@@ -1688,9 +1695,11 @@ def main():
     actionFrame = ctk.CTkFrame(mainContentFrame, fg_color="#dfd8c8")
     actionFrame.pack(pady=int(20 * 1.5))
 
-    # Increased button size (10% increase)
-    printInvoiceButton = ctk.CTkButton(actionFrame, text="Print Invoice", width=int(screen_width * .15),fg_color= "#393939",hover_color="#252523",  font=("Times New Roman", int(21)),command = lambda:printInvoice(db))
+    printInvoiceButton = ctk.CTkButton(actionFrame, text="Print Invoice", width=int(screen_width * .15),fg_color= "#393939",hover_color="#252523",  font=("Times New Roman", int(21)),command = lambda:printInvoice(db,1))
     printInvoiceButton.grid(row=0, column=0, padx=int(10 * 1.5), pady=int(5 * 1.5))
+
+    saveSalesButton = ctk.CTkButton(actionFrame, text="Save Sales", width=int(screen_width * .15),fg_color= "#393939",hover_color="#252523",  font=("Times New Roman", int(21)),command = lambda:printInvoice(db,0))
+    saveSalesButton.grid(row=0, column=1, padx=int(10 * 1.5), pady=int(5 * 1.5))
 
     clearAllButton = ctk.CTkButton(actionFrame, text=" Clear All ", width=int(screen_width * .15),fg_color= "#e62739",hover_color="#a93226",  font=("Times New Roman", int(21)), command = clear_data)
     clearAllButton.grid(row=0, column=2, padx=int(10 * 1.5), pady=int(5 * 1.5))
