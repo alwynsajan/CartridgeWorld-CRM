@@ -8,7 +8,7 @@ rmdir /s /q dist
 del main.spec
 
 :: Run PyInstaller with required options
-pyinstaller --onefile --icon=icon.png ^
+pyinstaller --onefile --noconsole --icon=icon.ico ^
   --hidden-import=mariadb ^
   --hidden-import=sqlite3 ^
   --hidden-import=pymysql ^
@@ -21,6 +21,8 @@ pyinstaller --onefile --icon=icon.png ^
 echo Copying config.json and CW.png to dist folder...
 xcopy /y config.json dist\
 xcopy /y invoiceLogo.JPEG dist\
+xcopy /y icon.ico dist\
+xcopy /y icon.JPG dist\
 
 echo Build complete. EXE file is in the 'dist' folder.
 pause
