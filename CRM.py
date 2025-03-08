@@ -1092,7 +1092,7 @@ def openMiscellaneousWindow(productEntry,db):
 
 
 # Define the function
-def writeSalesDetails(db, paymentType="efpos"):
+def writeSalesDetails(db, paymentType="eftpos"):
     global finalProductList, selectedCustomerDetails
 
     # Retrieve customerID from the database using the customer's name (if applicable)
@@ -1180,18 +1180,18 @@ def printInvoice(db):
     paymentWindow.grab_set()
     paymentWindow.focus_force()
 
-    # Variable to store selected payment type, default to "Efpos"
-    payment_type = tk.StringVar(value="Efpos") 
+    # Variable to store selected payment type, default to "Eftpos"
+    payment_type = tk.StringVar(value="Eftpos") 
 
     # Create radio buttons for payment types
     cashRadio = ctk.CTkRadioButton(paymentWindow, text="Cash", variable=payment_type, value="Cash", font=("Times New Roman", 16))
-    efposRadio = ctk.CTkRadioButton(paymentWindow, text="Efpos", variable=payment_type, value="Efpos", font=("Times New Roman", 16))
+    eftposRadio = ctk.CTkRadioButton(paymentWindow, text="Eftpos", variable=payment_type, value="Eftpos", font=("Times New Roman", 16))
     creditRadio = ctk.CTkRadioButton(paymentWindow, text="Credit", variable=payment_type, value="Credit", font=("Times New Roman", 16))
     bankTransferRadio = ctk.CTkRadioButton(paymentWindow, text="Bank Transfer", variable=payment_type, value="Bank Transfer", font=("Times New Roman", 16))
 
     # Pack radio buttons into the window
     cashRadio.pack(anchor="w", pady=5,padx= 10)
-    efposRadio.pack(anchor="w", pady=5,padx= 10)
+    eftposRadio.pack(anchor="w", pady=5,padx= 10)
     creditRadio.pack(anchor="w", pady=5,padx= 10)
     bankTransferRadio.pack(anchor="w", pady=5,padx= 10)
 
